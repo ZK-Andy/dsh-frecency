@@ -17,8 +17,8 @@ src/
 
 ## 与 DSH 宿主的集成点
 
-- **插件装载**：npm bundle 形态。`package.json` 的 `dsh.bundle.patch` 指向 `cordis.patch.yml`，其 `insert` 行把插件挂进 profile 层栈；安装命令 `dsh plugin --profile <p> add dsh-frecency`（pnpm 转发到 profile 目录）。
-- **工具注册**：入口声明 `inject: ['tools']`，`apply(ctx)` 中 `ctx.tools.register(defineTool(...))`（`@deepseek-ai/dsh-tools`）。注册表按层合并，**scoped 同名注册遮蔽 global 内置工具**（源码事实：`dsh-tools/lib/index.js` "Scoped registrations shadow globals"）；保留名 `run_code` 不可注册，`grep`/`glob` 不受影响。
+- **双平面装载**：npm bundle 形态经 `dsh plugin add` 进入 profile bundle 层栈（host 平面），但 host 平面的同名注册对会话不可达——内置 `grep`/`glob` 由 agent 预设在会话创建时挂载（agent 平面），比 host 平面更近。有效遮蔽发生在 agent 预设组合内：包内附带 `preset/` 模板（`standard` 预设副本 + 本插件行插在 `tool-fs-search` 之后），复制到 `~/.dsh/.agent-presets/` 并在会话选择。host 平面挂载以 `enabled: false` 配置置惰，仅承担依赖与包生命周期。
+- **工具注册**：入口声明 `inject: ['tools', 'systemPrompt']`，`apply(ctx)` 中 `ctx.tools.register(defineTool(...))`（`@deepseek-ai/dsh-tools`）。注册表按层合并，**nearest scope 的同名条目遮蔽较远者**；保留名 `run_code` 不可注册，`grep`/`glob` 不受影响。
 - **工具契约**：`defineTool` 必须声明 `output { schema, render, presentationMeta? }`——缺 `render` 注册即抛 `TypeError`；object 输出 schema 必须带 `additionalProperties: true`。
 
 ## 呈现复用

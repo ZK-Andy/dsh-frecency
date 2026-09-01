@@ -103,9 +103,7 @@ dsh-frecency/
 
 ### 4.2 覆盖内置 grep/glob 的机制
 
-DSH 工具注册表 `@deepseek-ai/dsh-tools` 是**分层作用域**：`register()` 的 JSDoc 明确"**Scoped tools shadow globals**"，且可见性合并是"**nearest scope 的同名条目遮蔽较远的**，global 层最远"（`inherited.set(name, definition)` 逐层覆盖，最后 scope 自己的 `visible.set()` 兜底）。
-
-因此：**同名 `grep`/`glob` 在更近 scope 注册，会遮蔽（替换）内置的实现**。这正是"一切都插件"的体现——不需要专门的 provider seam，工具注册表本身就是可替换点（web 搜索用 `ctx.web.registerSearchProvider`，文件搜索走 `ctx.tools.register` 遮蔽，两条路都是 DSH 既有机制）。
+DSH 工具注册表 `@deepseek-ai/dsh-tools` 按层合并、**nearest scope 的同名条目遮蔽较远者**。实测（2026-09-02 真实环境验证）修正了设计期假设：内置 `grep`/`glob` 不在 host 全局层，而是由 agent 预设在会话创建时挂载（agent 平面）——host 平面 bundle 的同名注册永远更远、不生效（无预设机制的 headless 部署则同层冲突、注册直接抛错）。因此同名遮蔽的落点是 **agent 预设组合**：本插件作为预设行插在 `tool-fs-search` 之后，同一组合内后行更近、遮蔽成立。机制细节与装载形态见 `docs/architecture.md` 与对应 ADR。
 
 ### 4.3 生命周期
 

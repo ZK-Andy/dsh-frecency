@@ -54,6 +54,7 @@
   },
   "files": [
     "dist",
+    "preset",
     "cordis.patch.yml",
     "LICENSE",
     "README.md",

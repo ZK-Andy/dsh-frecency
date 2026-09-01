@@ -9,8 +9,19 @@
 ## 安装
 
 ```sh
-dsh plugin --profile web add dsh-frecency
+dsh plugin --profile <profile> add dsh-frecency
+cp -rL ~/.dsh/profiles/<profile>/node_modules/dsh-frecency/preset ~/.dsh/.agent-presets/dsh-frecency
 ```
+
+然后向 `~/.dsh/profiles/<profile>/cordis.patch.yml` 追加（让 host 平面挂载保持惰性——原因见下）：
+
+```yaml
+- id: dsh-frecency
+  config:
+    enabled: false
+```
+
+最后在会话启动时选择 **dsh-frecency** 这个 agent 预设。DSH 在两个平面解析工具：内置 `grep` / `glob` 由 agent 预设在会话创建时挂载（agent 平面），比任何 profile bundle（host 平面）都更近会话——同名遮蔽必须发生在预设组合内。附带的预设是 `standard` 组合的副本、在 `tool-fs-search` 之后插入了 dsh-frecency；升级 dsh 后需重新派生。摘除预设行即回退内置工具。
 
 ## 你得到什么
 

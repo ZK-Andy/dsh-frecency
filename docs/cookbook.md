@@ -20,6 +20,12 @@
 - 本地开发用 `--patch` 绝对路径覆盖层 + 本地 `node_modules` 软链（裸导入解析）；正式 `dsh plugin add` 不受影响。
 - e2e 一律用默认 headless profile，勿新造 profile——`dsh-code-runtime-worker` 不在 npm，新 profile 拉不到依赖。
 
+## 验证与取证
+
+- **遮蔽是否生效的判别**：会话内 grep 一个已知词，比对该词的 rg 计数（尊重 gitignore）与引擎返回项数——两者语义不同（rg 按行、引擎按匹配出现），计数一致即内置在服务；另外 `grep fff /proc/<pid>/maps` 会撞地址 hex 伪匹配（如 `[vsyscall]`），须按路径字段 awk 过滤，`libfff_c.so` 仅在 `FileFinder.create()` 时映射、import 不映射，可据此判定 apply 是否执行。
+- **真宿主**：`node dsh --profile <p>` 进程才是 harness（`~/.dsh/logs/run-marker.json` 的 pid 是桌面壳）；落盘日志 `~/.dsh/logs/host.log`。
+- **预设派生程序**：shipped 预设升级后，从新版本的 `standard` 重新复制并重插 dsh-frecency 行（对齐 peerDependencies 锁定的 dsh 版本）；编辑预设的权威指引见 dsh-agent-presets 附带的 `cordis` 预设（创造模式）技能。
+
 ## 流程先例（dotnet 项目）
 
 > 指向 `/mnt/work/dotnet-deepseek-harness-desktop/`（本仓 AI 协作骨架与 HANDOFF 治理的参照源）。
