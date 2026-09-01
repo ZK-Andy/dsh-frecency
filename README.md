@@ -12,7 +12,7 @@ English | [中文](./README.zh.md)
   <a href="https://nodejs.org"><img src="https://img.shields.io/badge/node-%3E%3D22-339933" alt="node >= 22"></a>
 </p>
 
-A [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) plugin that takes over the built-in `grep` / `glob` file-search tools: `grep` runs on a **resident index with frecency ranking**, `glob` mirrors the built-in discovery semantics exactly.
+A [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) plugin that takes over the built-in `grep` / `glob` file-search tools: `grep` runs on a **resident index with frecency ranking**, `glob` mirrors the built-in discovery semantics exactly when ripgrep is available (and degrades to the resident index otherwise).
 
 The built-in tools spawn a fresh ripgrep process on every call and scan from scratch. In long sessions with many parallel subagents, the same searches run dozens of times. dsh-frecency keeps one resident index per working directory (the Rust [fff](https://github.com/dmtrKovalenko/fff) engine via `@ff-labs/fff-node`), so repeated searches hit hot memory in milliseconds, ranked by access/modification frecency.
 

@@ -36,7 +36,7 @@ src/
 
 ## glob 的语义平价
 
-内置 glob 的契约是**含 hidden 与 ignored 文件、排除 VCS 元数据（.git/.svn/.hg/.bzr/.jj/.sl）、按修改时间排序**，而常驻索引本身不收 gitignored 文件、引擎 `GlobOptions` 也没有放开开关——引擎侧无法承载。因此 glob 执行**逐参数镜像内置的 `rg --files` 命令**（`--no-config --files --glob=<pattern> --sort=modified --no-ignore --hidden` + VCS 双排除 glob；`path` 参数选中的子树经 `-- <prefix>` 收窄遍历），二进制解析复用内置包的公开导出 `resolveRgPath()`（与内置同一份 `@vscode/ripgrep` 打包二进制；PATH `rg` 兜底），流式读取并按抓取预算（2000 条）诚实截断。rg 不可用或失败时降级到常驻索引（缺 gitignored 文件的旧语义），不使调用失败。grep 无此漂移——内置 grep 默认尊重 gitignore，与引擎一致。决策与备选见 ADR `glob-serves-via-rg-parity`。
+内置 glob 的契约是**含 hidden 与 ignored 文件、排除 VCS 元数据（.git/.svn/.hg/.bzr/.jj/.sl）、按修改时间排序**，而常驻索引本身不收 gitignored 文件、引擎 `GlobOptions` 也没有放开开关——引擎侧无法承载。因此 glob 执行**逐参数镜像内置的 `rg --files` 命令**：复用内置包公开导出的 `buildGlobCommand` 构造 argv（唯一差异是前置注入 `--no-config`，防止宿主 `RIPGREP_CONFIG_PATH` 预处理器——见 cookbook 的取证细节），二进制解析复用公开导出的 `resolveRgPath()`（与内置同一份 `@vscode/ripgrep` 打包二进制；PATH `rg` 兜底），流式读取、按抓取预算（2000 条）诚实截断。完整内置命令的逐参数细节见 `docs/cookbook.md`（内置源码取证），此处不复述。rg 不可用或失败时降级到常驻索引（缺 gitignored 文件的旧语义），不使调用失败。**取消/超时例外**：调用者取消或工具超时（`exec.signal` aborted）时不降级——`signal` 已转发给 rg 进程终止它，异常上抛呈现为取消，不做额外索引扫描。grep 无此漂移——内置 grep 默认尊重 gitignore，与引擎一致。决策与备选见 ADR `glob-serves-via-rg-parity`。
 
 ## 引擎 API 事实（实测，实现以此为准）
 
@@ -48,5 +48,5 @@ src/
 
 - **注册期**：`apply()` 先探测 `FileFinder.create()`（对 `process.cwd()`）；失败则不注册任何遮蔽工具，向日志输出一次显式 warn——内置 ripgrep 工具自然可见。失败不静默、不重试。
 - **调用期**：引擎检索失败（`Result.ok === false`）以异常上抛，工具调用按 `isError` 呈现给模型；不注销已注册工具（瞬时错误与致命缺失区分对待）。
-- **glob 双级降级**：打包二进制解析失败 → PATH `rg`；rg spawn 失败或非 0/1 退出 → 常驻索引（缺 gitignored 文件），两级都打日志。
+- **glob 双级降级**：打包二进制解析失败 → PATH `rg`；rg spawn 失败或非 0/1 退出 → 常驻索引（缺 gitignored 文件），两级都打日志。取消/超时（`exec.signal` aborted）**不**走降级——`signal` 转发给 rg 进程终止它，异常上抛呈现为取消。
 - **配置**：`enabled: false` 时同样不注册，行为等同未安装。

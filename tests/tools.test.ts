@@ -37,15 +37,15 @@ const rgDefaults = vi.hoisted(() => ({
   /** `null` = runRgFiles rejects (spawn failure / non-zero rg exit). */
   result: null as { paths: string[]; complete: boolean } | null,
   error: null as string | null,
-  calls: [] as { argv: string[]; cwd: string; budget: number }[],
+  calls: [] as { argv: string[]; cwd: string; budget: number; signal?: AbortSignal }[],
 }));
 
 vi.mock("../src/rg.ts", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../src/rg.ts")>();
   return {
     ...actual,
-    runRgFiles: (argv: string[], cwd: string, budget: number) => {
-      rgDefaults.calls.push({ argv, cwd, budget });
+    runRgFiles: (argv: string[], cwd: string, budget: number, signal?: AbortSignal) => {
+      rgDefaults.calls.push({ argv, cwd, budget, signal });
       if (rgDefaults.error !== null) return Promise.reject(new Error(rgDefaults.error));
       return Promise.resolve(rgDefaults.result ?? { paths: [], complete: true });
     },

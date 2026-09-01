@@ -23,6 +23,7 @@ glob 工具执行改走 **rg 平价模式**：逐参数镜像内置 glob 的固�
 
 - 收益：glob 与内置逐参数同命令、同二进制，结果集可证一致（本仓 `**/*.test.ts`：引擎 6 vs rg 平价 196）；glob 不再依赖引擎可用性。
 - 代价：glob 每次调用 spawn rg（与内置同成本，无回归也无收益——插件的提速价值集中在 grep 的常驻索引）；frecency 排序承诺从 glob 收窄到 grep（README/提示词已同步）。
+- 取消/超时语义：glob 把 `exec.signal` 转发给 rg 进程（与内置 `runRipgrep` 同契约），调用者取消或工具超时时终止 rg 而非滞留孤儿进程；该场景不上抛降级、不做额外索引扫描。
 - 无需处理：grep 无同类漂移——内置 grep 命令（`buildGrepCommand`）不带 `--no-ignore`/`--hidden`，默认尊重 gitignore，与引擎候选集一致。
 - Deferred：引擎原生 glob 若将来提供 ignore 开关，可重评 rg 路线。
 

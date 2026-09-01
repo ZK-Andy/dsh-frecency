@@ -71,11 +71,21 @@ export function defineGlobTool(caps: RetentionCaps & { timeoutMs: number }): Too
       let relativePaths: string[];
       let exhausted: boolean;
       try {
-        const rgResult = await runRgFiles(buildGlobArgv(input.pattern, base.prefix), base.basePath, GLOB_FETCH_BUDGET);
+        const rgResult = await runRgFiles(
+          buildGlobArgv(input.pattern, base.prefix),
+          base.basePath,
+          GLOB_FETCH_BUDGET,
+          exec.signal,
+        );
         relativePaths = rgResult.paths;
         exhausted = rgResult.complete;
         pluginLog(`glob "${input.pattern}" served by rg parity — ${relativePaths.length} paths (workdir ${workdir})`);
       } catch (error) {
+        // Caller cancellation / tool timeout: do NOT degrade and run an extra
+        // resident-index scan — surface the abort, like the built-in tool's
+        // SEARCH_ABORTED. The signal was already forwarded to the rg process
+        // (the orphan-leak fix), so this path just stops doing more work.
+        if (exec.signal?.aborted) throw error;
         // rg unavailable or failed: degrade to the resident index (which
         // misses gitignored files) rather than failing the call — the
         // call-time face of the same step-aside philosophy as apply().

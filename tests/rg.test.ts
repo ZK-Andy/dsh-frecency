@@ -3,7 +3,24 @@ import { mkdtempSync, rmSync, utimesSync, writeFileSync, mkdirSync } from "node:
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { buildGlobArgv, GLOB_VCS_EXCLUDES, resolveRgPath, runRgFiles } from "../src/rg.ts";
+import { buildGlobArgv, resolveRgPath, runRgFiles } from "../src/rg.ts";
+
+/**
+ * True when a usable ripgrep binary is present. The built-in glob peers on the
+ * packaged `@vscode/ripgrep` binary via `resolveRgPath` (PATH `rg` is the
+ * fallback when that peer is missing). A failed version probe means rg is
+ * unavailable and the parity path would degrade — skip those tests rather than
+ * fail, matching the documented skip condition in `docs/testing.md`.
+ */
+function rgAvailable(): boolean {
+  try {
+    execFileSync("rg", ["--version"], { stdio: "ignore" });
+    return true;
+  } catch {
+    return false;
+  }
+}
+const skipIfNoRg = describe.skipIf(!rgAvailable());
 
 describe("buildGlobArgv", () => {
   it("mirrors the built-in glob contract argument for argument", () => {
@@ -14,7 +31,7 @@ describe("buildGlobArgv", () => {
       "--sort=modified",
       "--no-ignore",
       "--hidden",
-      ...GLOB_VCS_EXCLUDES.flatMap((name) => [`--glob=!**/${name}`, `--glob=!**/${name}/**`]),
+      ...[".git", ".svn", ".hg", ".bzr", ".jj", ".sl"].flatMap((name) => [`--glob=!**/${name}`, `--glob=!**/${name}/**`]),
     ]);
   });
 
@@ -23,7 +40,7 @@ describe("buildGlobArgv", () => {
   });
 });
 
-describe("runRgFiles (real packaged ripgrep)", () => {
+skipIfNoRg("runRgFiles (real packaged ripgrep)", () => {
   let root: string;
 
   beforeAll(() => {

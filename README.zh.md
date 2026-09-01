@@ -12,7 +12,7 @@
   <a href="https://nodejs.org"><img src="https://img.shields.io/badge/node-%3E%3D22-339933" alt="node >= 22"></a>
 </p>
 
-一个 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 插件：接管内置 `grep` / `glob` 文件搜索——`grep` 跑在**常驻索引 + frecency 排序**上，`glob` 与内置发现语义完全对齐。
+一个 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 插件：接管内置 `grep` / `glob` 文件搜索——`grep` 跑在**常驻索引 + frecency 排序**上，`glob` 在 ripgrep 可用时与内置发现语义完全对齐（不可用时降级到常驻索引）。
 
 内置工具每次调用都 spawn 一个全新的 ripgrep 进程、从零扫描；长会话与多子代理场景下同样的搜索会重复执行数十次。dsh-frecency 为每个工作目录保留一份常驻索引（Rust [fff](https://github.com/dmtrKovalenko/fff) 引擎，经 `@ff-labs/fff-node`），重复检索毫秒级命中热内存，结果按访问/修改 frecency 排序。
 
