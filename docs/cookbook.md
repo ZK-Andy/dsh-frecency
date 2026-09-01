@@ -28,6 +28,12 @@
 - **预设组合的作用域事实**：同一 `agent.cordis.yml` 的所有行共享一个 scope，同名工具两行并存即 `tool "grep" is already registered in this scope`——跨行遮蔽不存在，同名替换必须整行进行；跨平面遮蔽由 agent own 层实现（per-agent 注册，见 ADR `mount-via-per-agent-registration`）。
 - **per-agent 注册的程序与坑**：配方 = `ctx.on("agent/created")` + `agent.ctx.inject(["tools","systemPrompt"], register)` + `agent/disposed` dispose fiber（第一方先例 `dsh-tool-subagent`）；`agents` 服务**不可**声明进 `inject`——boot 会阻塞等待该服务，headless 组合不提供，Entry 永挂。headless 单任务模式做验证载体需模型环境变量（如 `COMMANDCODE_API_KEY_*`），缺失时 boot 后静默挂起。
 
+## 市场与发布（[发布]）
+
+- **dsh 市场页「介绍」来源**：dsh-market 的插件介绍显示来自 **awesome-dsh-plugin 汇编清单**的 `data/plugins/<owner>__<repo>.yml` 条目，**不**读 npm 包描述/README。因此「市场页介绍空白」通常是**未收录**，而非包信息缺失——npm 包 description/keywords/readme 齐全与否与市场页展示是两套来源。
+- **npm README 检测选 .zh.md**：仓库根同时有 `README.md` 与 `README.zh.md` 且都进 `files` 时，npm 检测 readme 字段可能选到 **README.zh.md**（本地 `npm pack`/registry `readme` 所见），导致 npm 页介绍是中文版。若本意英文为主，发布前核 `npm view <pkg> readme` 首行确认选中哪个。
+- **awesome-dsh-plugin 收录前提**：entry 描述含 `: `（冒号+空格）时 YAML 必须加引号，否则解析成嵌套键被 CI 打回（`scripts/check-submission.mjs --base <sha>` 本地可校验）；硬性门槛「仓库创建 ≥1 天 且 ≥10 提交」由 CI 自动检查，不足即提示 resubmit，重提无负面影响。
+
 ## 流程先例（dotnet 项目）
 
 > 指向 `/mnt/work/dotnet-deepseek-harness-desktop/`（本仓 AI 协作骨架与 HANDOFF 治理的参照源）。
