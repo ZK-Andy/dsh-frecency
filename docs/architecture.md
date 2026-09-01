@@ -17,7 +17,7 @@ src/
 
 ## 与 DSH 宿主的集成点
 
-- **双平面装载**：npm bundle 形态经 `dsh plugin add` 进入 profile bundle 层栈（host 平面），但 host 平面的同名注册对会话不可达——内置 `grep`/`glob` 由 agent 预设在会话创建时挂载（agent 平面），比 host 平面更近。有效遮蔽发生在 agent 预设组合内：包内附带 `preset/` 模板（`standard` 预设副本、其中 `tool-fs-search` 行整行替换为本插件），复制到 `~/.dsh/.agent-presets/` 并在会话选择。预设组合的所有行共享一个 scope，同层不可重名，同名替换只能整行进行。host 平面挂载以 `enabled: false` 配置置惰，仅承担依赖与包生命周期。
+- **双平面装载（per-agent 注册）**：npm bundle 形态经 `dsh plugin add` 进入 profile bundle 层栈（host 平面），但 host 平面的同名注册对会话不可达——内置 `grep`/`glob` 由 agent 预设挂载于 agent 平面（更近）。插件 `apply()` 监听 `agent/created`，经 `agent.ctx.inject(["tools", "systemPrompt"], ...)` 把工具注册进**每个 agent 自己的层**（own 层赢过一切继承层，任何预设下都成立），`agent/disposed` 时回收安装 fiber；注册期探测失败则不安装、显式 warn 回退内置。`agents` 注册表不进 `inject`——声明后 boot 会阻塞等待该服务，headless 组合不提供（实测）。
 - **工具注册**：入口声明 `inject: ['tools', 'systemPrompt']`，`apply(ctx)` 中 `ctx.tools.register(defineTool(...))`（`@deepseek-ai/dsh-tools`）。注册表按层合并，**nearest scope 的同名条目遮蔽较远者**；保留名 `run_code` 不可注册，`grep`/`glob` 不受影响。
 - **工具契约**：`defineTool` 必须声明 `output { schema, render, presentationMeta? }`——缺 `render` 注册即抛 `TypeError`；object 输出 schema 必须带 `additionalProperties: true`。
 

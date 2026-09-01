@@ -10,18 +10,9 @@ The built-in tools spawn a fresh ripgrep process on every call and scan from scr
 
 ```sh
 dsh plugin --profile <profile> add dsh-frecency
-cp -rL ~/.dsh/profiles/<profile>/node_modules/dsh-frecency/preset ~/.dsh/.agent-presets/dsh-frecency
 ```
 
-Then append to `~/.dsh/profiles/<profile>/cordis.patch.yml` (keeps the host-plane mount inert — see why below):
-
-```yaml
-- id: dsh-frecency
-  config:
-    enabled: false
-```
-
-Finally select the **dsh-frecency** agent preset when starting a session. DSH resolves tools on two planes: the built-in `grep` / `glob` are mounted per-session by the agent preset (agent plane), which is nearer to the session than any profile bundle (host plane) — so same-name shadowing must happen inside a preset composition. The shipped preset is a copy of the `standard` composition with the `tool-fs-search` row **replaced** by dsh-frecency (all rows of one preset share a single scope, so both rows cannot coexist); the plugin reuses fs-search's presentation builders, so nothing else is lost. Re-derive the preset when you upgrade dsh; restoring the `tool-fs-search` row (and removing ours) falls back to the built-in tools.
+Restart dsh and start a session — `grep` / `glob` keep their names and schemas but now run on the resident index, whatever agent preset you use. The built-in search tools are mounted per-session on the agent plane, which beats any host-plane registration, so the plugin registers into **each agent's own layer** at agent creation (first-party precedent: `dsh-tool-subagent`). Config `enabled: false` or removing the plugin falls back to the built-in ripgrep tools.
 
 ## What you get
 

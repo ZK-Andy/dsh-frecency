@@ -1,9 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const registered: string[] = [];
-const sections: string[] = [];
 let createError: string | null = null;
 const effects: (() => void)[] = [];
+const warnings: string[] = [];
 
 vi.mock("@ff-labs/fff-node", () => ({
   FileFinder: {
@@ -30,47 +29,117 @@ vi.mock("@ff-labs/fff-node", () => ({
 const { apply } = await import("../src/index.ts");
 const { releaseFinders } = await import("../src/finder.ts");
 
-function makeCtx() {
+interface FixtureAgent {
+  id: string;
+  registered: string[];
+  sections: string[];
+  disposed: boolean;
+}
+
+function makeAgent(id: string): FixtureAgent & import("../src/index.ts").AgentLike {
+  const agent: FixtureAgent = { id, registered: [], sections: [], disposed: false };
   return {
-    tools: { register: (definition: { name: string }) => void registered.push(definition.name) },
-    systemPrompt: {
-      section: (s: { name: string }) => void sections.push(s.name),
-      getSectionOrder: () => 42,
+    id,
+    get registered() {
+      return agent.registered;
+    },
+    get sections() {
+      return agent.sections;
+    },
+    get disposed() {
+      return agent.disposed;
+    },
+    ctx: {
+      inject(_deps, fn) {
+        fn({
+          tools: { register: (definition: { name: string }) => void agent.registered.push(definition.name) },
+          systemPrompt: {
+            section: (s: { name: string }) => void agent.sections.push(s.name),
+            getSectionOrder: () => 42,
+          },
+        });
+        return {
+          dispose: async () => {
+            agent.disposed = true;
+          },
+        };
+      },
+    },
+  } as FixtureAgent & import("../src/index.ts").AgentLike;
+}
+
+function makeCtx(agents: ReturnType<typeof makeAgent>[] = []) {
+  const listeners: Record<string, ((payload: { agent: unknown }) => void)[]> = {};
+  return {
+    agents: { list: () => agents },
+    on(event: string, callback: (payload: { agent: unknown }) => void) {
+      (listeners[event] ??= []).push(callback);
+    },
+    emit(event: string, agent: unknown) {
+      for (const callback of listeners[event] ?? []) callback({ agent });
     },
     logger: { warn: (message: string) => void warnings.push(message), info: () => {} },
     effect: (_setup: () => () => void) => void effects.push(() => {}),
   };
 }
 
-const warnings: string[] = [];
-
 beforeEach(() => {
-  registered.length = 0;
-  sections.length = 0;
-  warnings.length = 0;
   effects.length = 0;
+  warnings.length = 0;
   createError = null;
   releaseFinders();
 });
 
 describe("apply", () => {
-  it("registers shadow grep/glob plus their system-prompt sections", async () => {
-    await apply(makeCtx(), {});
-    expect(registered.sort()).toEqual(["glob", "grep"]);
-    expect(sections.sort()).toEqual(["tool:glob", "tool:grep"]);
+  it("installs shadow tools into each agent's own layer via agent/created", async () => {
+    const ctx = makeCtx();
+    await apply(ctx, {});
+    const agent = makeAgent("a1");
+    ctx.emit("agent/created", agent);
+    expect(agent.registered.sort()).toEqual(["glob", "grep"]);
+    expect(agent.sections.sort()).toEqual(["tool:glob", "tool:grep"]);
   });
 
-  it("registers nothing when disabled by config", async () => {
-    await apply(makeCtx(), { enabled: false });
-    expect(registered).toEqual([]);
-    expect(sections).toEqual([]);
+  it("installs into agents that already exist at apply time", async () => {
+    const agent = makeAgent("existing");
+    await apply(makeCtx([agent]), {});
+    expect(agent.registered.sort()).toEqual(["glob", "grep"]);
+  });
+
+  it("ignores a repeated created announcement for the same agent", async () => {
+    const ctx = makeCtx();
+    await apply(ctx, {});
+    const agent = makeAgent("a1");
+    ctx.emit("agent/created", agent);
+    ctx.emit("agent/created", agent);
+    expect(agent.registered).toEqual(["grep", "glob"]);
+  });
+
+  it("disposes the install fiber when the agent is disposed", async () => {
+    const ctx = makeCtx();
+    await apply(ctx, {});
+    const agent = makeAgent("a1");
+    ctx.emit("agent/created", agent);
+    ctx.emit("agent/disposed", agent);
+    expect(agent.disposed).toBe(true);
+  });
+
+  it("installs nothing when disabled by config", async () => {
+    const ctx = makeCtx();
+    await apply(ctx, { enabled: false });
+    const agent = makeAgent("a1");
+    ctx.emit("agent/created", agent);
+    expect(agent.registered).toEqual([]);
+    expect(agent.sections).toEqual([]);
   });
 
   it("steps aside loudly when the native engine cannot start", async () => {
     createError = "native binary missing";
-    await apply(makeCtx(), {});
-    expect(registered).toEqual([]);
-    expect(sections).toEqual([]);
+    const ctx = makeCtx();
+    await apply(ctx, {});
+    const agent = makeAgent("a1");
+    ctx.emit("agent/created", agent);
+    expect(agent.registered).toEqual([]);
     expect(warnings).toHaveLength(1);
     expect(warnings[0]).toContain("native binary missing");
     expect(warnings[0]).toContain("built-in grep/glob stay active");

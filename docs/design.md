@@ -70,8 +70,8 @@ DeepSeek Harness (dsh) 的 `grep` / `glob` 工具由 `@deepseek-ai/dsh-tool-fs-s
 
 已有 [sleepinginsummer/dsh-fff](https://www.npmjs.com/package/dsh-fff) 是 pi-fff 的 DSH 移植，但它：
 
-- 用**纯 JS 子序列打分**（`fuzzyScore`），刻意不用 Rust native（"dynamic DSH plugins cannot require npm packages"——这是它选择的单文件自包含分发形态的取舍，非 DSH 硬限制）。
-- **明确不做** `read`/`grep` 工具覆盖（"read/grep 工具覆盖不做"，承认内置工具行为不同，改用 `fff_grep` 等新名字）。
+- 用**纯 JS 子序列打分**（`fuzzyScore`），刻意不用 Rust native（"dynamic DSH plugins cannot require npm packages"——单文件自包含分发形态的取舍）。
+- **明确不做** `read`/`grep` 工具覆盖（承认内置工具行为不同，改用 `fff_grep` 等新名字）。实测（2026-09-02）证实其回避有先见之明：DSH 的 agent 预设平面挂载使 host 平面同名覆盖不生效，覆盖需 per-agent 注册这类非常规通道——当时将其判为"非 DSH 硬限制"缺乏实证。
 
 dsh-frecency 的差异化：**用 Rust 原生引擎 + 覆盖内置 grep/glob**。这不是对 `dsh-fff` 的否定，而是不同路线（它走零依赖纯 JS，我们走原生性能 + 覆盖内置）。
 
@@ -103,7 +103,7 @@ dsh-frecency/
 
 ### 4.2 覆盖内置 grep/glob 的机制
 
-DSH 工具注册表 `@deepseek-ai/dsh-tools` 按层合并、**nearest scope 的同名条目遮蔽较远者**。实测（2026-09-02 真实环境验证）修正了设计期假设：内置 `grep`/`glob` 不在 host 全局层，而是由 agent 预设在会话创建时挂载（agent 平面）——host 平面 bundle 的同名注册永远更远、不生效（无预设机制的 headless 部署则同层冲突、注册直接抛错）。因此同名遮蔽的落点是 **agent 预设组合**：本插件作为预设行插在 `tool-fs-search` 之后，同一组合内后行更近、遮蔽成立。机制细节与装载形态见 `docs/architecture.md` 与对应 ADR。
+DSH 工具注册表 `@deepseek-ai/dsh-tools` 按层合并、**nearest scope 的同名条目遮蔽较远者**，且 agent 自己的层（own）赢过一切继承层。实测（2026-09-02 真实环境验证）修正了设计期假设：内置 `grep`/`glob` 由 agent 预设挂载于 agent 平面，host 平面 bundle 的同名注册永远更远；无预设部署（headless）则同层冲突、注册抛错。因此同名遮蔽的落点是 **per-agent 注册**：插件监听 `agent/created`，把工具注册进每个 agent 自己的层——任何预设下都成立，子代理共享同一份常驻索引。机制细节与装载形态见 `docs/architecture.md` 与对应 ADR。
 
 ### 4.3 生命周期
 

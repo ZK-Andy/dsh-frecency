@@ -1,2 +1,0 @@
-name: dsh-frecency
-description: standard 完整能力 + dsh-frecency 常驻索引 grep/glob（同名遮蔽内置 ripgrep 搜索）。

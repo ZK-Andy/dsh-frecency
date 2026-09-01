@@ -10,18 +10,9 @@
 
 ```sh
 dsh plugin --profile <profile> add dsh-frecency
-cp -rL ~/.dsh/profiles/<profile>/node_modules/dsh-frecency/preset ~/.dsh/.agent-presets/dsh-frecency
 ```
 
-然后向 `~/.dsh/profiles/<profile>/cordis.patch.yml` 追加（让 host 平面挂载保持惰性——原因见下）：
-
-```yaml
-- id: dsh-frecency
-  config:
-    enabled: false
-```
-
-最后在会话启动时选择 **dsh-frecency** 这个 agent 预设。DSH 在两个平面解析工具：内置 `grep` / `glob` 由 agent 预设在会话创建时挂载（agent 平面），比任何 profile bundle（host 平面）都更近会话——同名遮蔽必须发生在预设组合内。附带的预设是 `standard` 组合的副本、其中 `tool-fs-search` 行**整行替换**为 dsh-frecency（同一预设组合的所有行共享一个 scope，两行并存会重名冲突；本插件复用 fs-search 的呈现构造器，无其它损失）。升级 dsh 后需重新派生；恢复 `tool-fs-search` 行（并摘除本行）即回退内置工具。
+重启 dsh 并开一个会话即可——`grep` / `glob` 工具名与参数不变，但已切到常驻索引，且**无论你用哪个 agent 预设都生效**。内置搜索工具由 agent 预设挂载在会话近端（agent 平面），host 平面注册赢不了它，所以插件在**每个 agent 创建时把工具注册进 agent 自己的层**（第一方先例：`dsh-tool-subagent`）。配置 `enabled: false` 或卸载插件即回退内置 ripgrep 工具。
 
 ## 你得到什么
 
