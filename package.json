@@ -1,6 +1,6 @@
 {
   "name": "dsh-frecency",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Resident-index + frecency file search for DeepSeek Harness — shadows the built-in grep/glob tools. · DSH 常驻索引 + frecency 文件搜索，同名覆盖内置 grep/glob。",
   "type": "module",
   "main": "dist/index.js",
