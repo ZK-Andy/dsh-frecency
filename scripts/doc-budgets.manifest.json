@@ -1,0 +1,5 @@
+{
+  "budgets": [
+    { "path": "AGENTS.md", "max_words": 800 }
+  ]
+}

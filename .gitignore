@@ -1,0 +1,19 @@
+# 本地工作文档（规划/复盘，不纳入公开仓库）
+/HANDOFF.md
+/HANDOFF-todos.md
+/.plan/
+
+# Node / npm / pnpm
+node_modules/
+dist/
+*.tsbuildinfo
+.eslintcache
+
+# 构建产物
+coverage/
+*.log
+
+# 工具缓存
+/.cache/
+/.codegraph/
+.zcode/
