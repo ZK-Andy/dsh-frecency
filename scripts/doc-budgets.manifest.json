@@ -3,6 +3,7 @@
     { "path": "AGENTS.md", "max_words": 800 },
     { "path": "docs/design.md", "max_words": 1800 },
     { "path": "docs/architecture.md", "max_words": 1200 },
-    { "path": "docs/testing.md", "max_words": 800 }
+    { "path": "docs/testing.md", "max_words": 800 },
+    { "path": "docs/cookbook.md", "max_words": 800 }
   ]
 }

@@ -116,7 +116,7 @@ DSH 工具注册表 `@deepseek-ai/dsh-tools` 是**分层作用域**：`register(
 
 ### 4.4 原生依赖安装
 
-`@ff-labs/fff-node` 依赖 `ffi-rs` + `@ff-labs/fff-bin-*`（native 构建）。dsh 插件的 npm bundle 形态**支持带原生构建依赖**（dshmarket 已有的 `allowBuilds` 先例：`koffi`/`node-pty`/`@google/genai` 等原生包都放行）。dsh-frecency 安装时需在 profile 的 `pnpm-workspace.yaml` `allowBuilds` 中放行 `ffi-rs` / `@ff-labs/fff-bin-*`。
+`@ff-labs/fff-node` 依赖 `ffi-rs` + `@ff-labs/fff-bin-*`（native 构建）。dsh 插件的 npm bundle 形态支持原生依赖（dshmarket 已有 `allowBuilds` 先例）。实测 `ffi-rs` / `fff-bin-*` 均为纯预编译包、无 install 脚本，`allowBuilds` 实际非必需（判定程序见 `docs/cookbook.md`）。
 
 ## 5. 内存权衡
 
@@ -130,10 +130,9 @@ fff 常驻索引用内存换性能——要明确这个 trade-off 并在设计�
 
 ## 6. 风险与开放问题
 
-1. **native 依赖在 dsh 环境可装性**：`ffi-rs` + `fff-bin` 需 `allowBuilds` 放行；若装不上，需降级方案（回退内置，或像 `dsh-fff` 那样纯 JS）。这是落地前唯一实际技术卡点。
-2. **presentation 一致性**：遮蔽 grep 后要自带 `SearchResultView` 才与内置长得一样；否则显示成通用卡片（可解决，非阻断）。
-3. **是否真降低多子代理内存**：索引分摊了"重复扫描"，但**不消除**子代理各自上下文/工具结果在 Node 堆的累积。设计文档不承诺消除该部分，只承诺降低重复检索成本。
-4. **frecency 边界**：frecency 排序对"用户常打开的文件"最有效；冷文件/首次搜索的提升有限。
+1. **presentation 一致性**：遮蔽 grep 后要自带 `SearchResultView` 才与内置长得一样；否则显示成通用卡片（可解决，非阻断）。
+2. **是否真降低多子代理内存**：索引分摊了"重复扫描"，但**不消除**子代理各自上下文/工具结果在 Node 堆的累积。设计文档不承诺消除该部分，只承诺降低重复检索成本。
+3. **frecency 边界**：frecency 排序对"用户常打开的文件"最有效；冷文件/首次搜索的提升有限。
 
 ## 7. 验证计划
 

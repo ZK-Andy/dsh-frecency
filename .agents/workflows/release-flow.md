@@ -12,4 +12,4 @@
 
 - pnpm `minimumReleaseAge` 会把过新版本从 `@latest` 解析排除——重试或钉版本。
 - `dsh.bundle` 声明 + `cordis.patch.yml` 必须随包发布，否则 `dsh plugin add` 装不进 bundle 层。
-- 原生依赖（如 `ffi-rs`）需 `allowBuilds` 放行，否则装不成功——发版前验证。
+- 原生依赖发版前按 [cookbook](../../docs/cookbook.md) 的 `allowBuilds` 判定程序核实（`ffi-rs`/`fff-bin-*` 实测纯预编译，非必需）。
