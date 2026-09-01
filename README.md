@@ -17,7 +17,7 @@ dsh plugin --profile web add dsh-frecency
 - **Same tool names** — `grep` / `glob` keep their names and schemas; the model switches with zero prompt changes.
 - **Resident index** — repeated searches reuse one in-memory index; single-digit milliseconds per call.
 - **Frecency ranking** — frequently opened / recently modified files surface first.
-- **Git-aware results** — modified / untracked / staged annotations on results.
+- **Git-aware index** — the engine tracks working-tree state per file; explicit annotations in tool output land in a follow-up release.
 - **Graceful fallback** — if the native engine can't load, the plugin steps aside and the built-in ripgrep tools keep working.
 
 See [docs/design.md](./docs/design.md) for the full design rationale.

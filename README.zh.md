@@ -17,7 +17,7 @@ dsh plugin --profile web add dsh-frecency
 - **同名工具**——`grep` / `glob` 工具名与参数不变，模型零提示词改动即切换。
 - **常驻索引**——重复检索复用同一份内存索引，单次调用毫秒级。
 - **frecency 排序**——常打开、最近改的文件优先呈现。
-- **git 感知**——结果带 modified / untracked / staged 标注。
+- **git 感知索引**——引擎按文件跟踪工作区状态；结果中的显式标注将在后续版本提供。
 - **优雅降级**——native 引擎加载失败时插件自动让位，内置 ripgrep 工具照常工作。
 
 设计动机与取舍详见 [docs/design.md](./docs/design.md)。
