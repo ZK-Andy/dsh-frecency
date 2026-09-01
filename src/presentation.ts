@@ -2,7 +2,7 @@ import { ItemRetainer, type RetainedItems } from "@deepseek-ai/dsh-output-retent
 import type { JsonValue } from "@deepseek-ai/dsh-util-values";
 import {
   formatGlobOutput,
-  formatGrepOutput,
+  formatGrepMatches,
   previewLine,
   sampleAcrossTopLevel,
 } from "@deepseek-ai/dsh-tool-fs-search";
@@ -66,21 +66,39 @@ export function globSearchMeta(page: Retained<string>, caps: RetentionCaps): Jso
   ) as unknown as JsonValue;
 }
 
-/** Bound serialized meta by dropping whole tail file groups (never the truncation flags). */
+/**
+ * Bound serialized meta by dropping whole tail groups — matches the built-in
+ * `capMetaBytes` for both shapes (`files` and `paths`): a meta that had to drop
+ * groups reports `truncated: true`, never a cropped "complete" impression.
+ */
 function capMetaBytes(meta: JsonValue, maxBytes: number): JsonValue {
   const obj = meta as Record<string, unknown>;
-  const files = obj["files"];
-  if (!Array.isArray(files)) return meta;
-  while (files.length > 1 && Buffer.byteLength(JSON.stringify(obj), "utf8") > maxBytes) {
-    files.pop();
+  const groups = obj["files"] ?? obj["paths"];
+  if (!Array.isArray(groups)) return meta;
+  let dropped = false;
+  while (groups.length > 0 && Buffer.byteLength(JSON.stringify(obj), "utf8") > maxBytes) {
+    groups.pop();
+    dropped = true;
   }
+  if (dropped) obj["truncated"] = true;
   return meta;
 }
 
-/** Mirror of the built-in `formatRetainedGrep` (no spill reference: dsh-frecency does not spill). */
+/**
+ * Built-in `formatRetainedGrep` shape with an honest footer: dsh-frecency does
+ * not spill, so the cap note never claims a saved complete result.
+ */
 export function formatRetainedGrep(retained: RetainedItems<GrepToolMatch>): string {
   if (retained.seen === 0) return "No matches found";
-  return formatGrepOutput(retained, undefined);
+  const noun = retained.seen === 1 ? "match" : "matches";
+  const header = retained.truncated ? `Found ${retained.kept} of ${retained.seen} matches` : `Found ${retained.seen} ${noun}`;
+  const body = formatGrepMatches(retained.items);
+  if (!retained.truncated) return `${header}\n\n${body}`;
+  return (
+    `${header}\n\n${body}\n\n` +
+    `(Showing ${retained.kept} of ${retained.seen} matches. The complete result was capped by the inline limit; ` +
+    "narrow pattern, path, or include to see more.)"
+  );
 }
 
 /**

@@ -5,7 +5,9 @@ import { filterByPrefix } from "./mapping.ts";
 import { formatGlobPage, globPage, globSearchMeta, type RetentionCaps } from "./presentation.ts";
 import { resolveScope } from "./scope.ts";
 
-const FETCH_PAGE_SIZE = 1000;
+/** Pages are fetched to exhaustion (bounded): see grep.ts for the truncation-honesty rationale. */
+const FETCH_PAGE_SIZE = 500;
+const MAX_PAGES = 4;
 
 const PARAMETERS = {
   pattern: {
@@ -26,8 +28,15 @@ const OUTPUT_SCHEMA = {
   properties: {
     root: { type: "string", required: true },
     paths: { type: "array", required: true, items: { type: "string" } },
+    truncated: { type: "boolean" },
   },
 } as const;
+
+interface GlobValue {
+  root: string;
+  paths: string[];
+  truncated?: boolean;
+}
 
 export function defineGlobTool(caps: RetentionCaps & { timeoutMs: number }): ToolDefinition {
   return defineTool({
@@ -48,19 +57,29 @@ export function defineGlobTool(caps: RetentionCaps & { timeoutMs: number }): Too
       const input = parseGlobArgs(args);
       const workdir = exec.agent?.session?.header?.cwd ?? process.cwd();
       const scope = await resolveScope(input.path, workdir);
-      const result = unwrap(scope.finder.glob(input.pattern, { pageSize: FETCH_PAGE_SIZE }), "glob");
-      let paths = result.items.map((item) => item.relativePath);
-      if (scope.prefix) {
-        paths = filterByPrefix(paths.map((path) => ({ path })), scope.prefix).map((entry) => entry.path);
+      const relativePaths: string[] = [];
+      let exhausted = false;
+      for (let pageIndex = 0; pageIndex < MAX_PAGES && !exhausted; pageIndex += 1) {
+        const result = unwrap(scope.finder.glob(input.pattern, { pageSize: FETCH_PAGE_SIZE, pageIndex }), "glob");
+        relativePaths.push(...result.items.map((item) => item.relativePath));
+        exhausted = result.totalMatched <= relativePaths.length;
       }
-      return { root: input.path === undefined ? "." : toWorkdirRelative(input.path, workdir), paths };
+      let paths = relativePaths.map((p) => scope.toDisplay(p));
+      if (scope.prefix) paths = filterByPrefix(paths.map((path) => ({ path })), scope.prefix).map((e) => e.path);
+      return {
+        root: input.path === undefined ? "." : toWorkdirRelative(input.path, workdir),
+        paths,
+        truncated: !exhausted,
+      };
     },
     presentCall: presentGlobCall,
     presentResult: presentGlobResult,
   });
 }
 
+/** The card/text page: cap logic on the full path list; engine-side incompleteness OR-ed in. */
 function globPageFor(value: unknown, caps: RetentionCaps) {
-  const { root, paths } = value as { root: string; paths: string[] };
-  return globPage(paths, caps, root);
+  const { root, paths, truncated } = value as GlobValue;
+  const page = globPage(paths, caps, root);
+  return truncated === true ? { ...page, truncated: true } : page;
 }

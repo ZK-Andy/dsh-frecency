@@ -14,39 +14,82 @@ interface FinderSlot {
   finder: FileFinder;
 }
 
-/** One resident slot for the session workspace, one for an occasional out-of-workspace `path` argument. */
-const slots: { workspace: FinderSlot | null; ephemeral: FinderSlot | null } = {
-  workspace: null,
-  ephemeral: null,
+interface SlotState {
+  slot: FinderSlot | null;
+  inflight: Promise<FileFinder> | null;
+}
+
+const states: Record<"workspace" | "ephemeral", SlotState> = {
+  workspace: { slot: null, inflight: null },
+  ephemeral: { slot: null, inflight: null },
 };
 
-async function acquire(slot: FinderSlot | null, options: InitOptions): Promise<FinderSlot> {
-  if (slot && slot.basePath === options.basePath && !slot.finder.isDestroyed) return slot;
-  slot?.finder.destroy();
-  const finder = unwrap(FileFinder.create(options), "FileFinder.create");  unwrap(await finder.waitForScan(SCAN_TIMEOUT_MS), "waitForScan");
-  // The content index builds in the background; wait so an early grep does not
-  // silently return zero hits. A timeout surfaces as an error, not a cold miss.
-  unwrap(await finder.waitForIndexReady(SCAN_TIMEOUT_MS), "waitForIndexReady");
-  return { basePath: options.basePath, finder };
+/** Set by releaseFinders(); blocks in-flight acquires from writing back a fresh finder after disposal. */
+let released = false;
+
+function destroyFinder(finder: FileFinder): void {
+  if (!finder.isDestroyed) finder.destroy();
+}
+
+async function acquire(state: SlotState, options: InitOptions): Promise<FileFinder> {
+  for (;;) {
+    const current = state.slot;
+    if (current && current.basePath === options.basePath && !current.finder.isDestroyed) {
+      return current.finder;
+    }
+    // Serialize create/swap per slot: concurrent calls either join the
+    // in-flight acquire or loop until the slot settles under their base path.
+    if (state.inflight) {
+      await state.inflight.catch(() => {});
+      continue;
+    }
+    const create = (async () => {
+      if (current) destroyFinder(current.finder);
+      const finder = unwrap(FileFinder.create(options), "FileFinder.create");
+      try {
+        // The content index builds in the background; wait so an early grep
+        // does not silently return zero hits. A timeout surfaces as an error,
+        // not a cold miss.
+        unwrap(await finder.waitForScan(SCAN_TIMEOUT_MS), "waitForScan");
+        unwrap(await finder.waitForIndexReady(SCAN_TIMEOUT_MS), "waitForIndexReady");
+      } catch (error) {
+        destroyFinder(finder);
+        throw error;
+      }
+      if (released) {
+        destroyFinder(finder);
+        throw new FrecencyError("dsh-frecency released while acquiring finder");
+      }
+      state.slot = { basePath: options.basePath, finder };
+      return finder;
+    })();
+    state.inflight = create;
+    try {
+      return await create;
+    } finally {
+      state.inflight = null;
+    }
+  }
 }
 
 /** Resident finder for the session workspace — created once, reused across calls. */
 export async function getWorkspaceFinder(basePath: string): Promise<FileFinder> {
-  slots.workspace = await acquire(slots.workspace, { basePath });
-  return slots.workspace.finder;
+  released = false;
+  return acquire(states.workspace, { basePath });
 }
 
 /** Short-lived finder for a `path` argument outside the workspace; replaces the previous ephemeral slot. */
 export async function getEphemeralFinder(basePath: string): Promise<FileFinder> {
-  slots.ephemeral = await acquire(slots.ephemeral, { basePath });
-  return slots.ephemeral.finder;
+  released = false;
+  return acquire(states.ephemeral, { basePath });
 }
 
 /** Destroy every resident finder (plugin disposal). Safe to call twice. */
 export function releaseFinders(): void {
+  released = true;
   for (const key of ["workspace", "ephemeral"] as const) {
-    const slot = slots[key];
-    if (slot && !slot.finder.isDestroyed) slot.finder.destroy();
-    slots[key] = null;
+    const slot = states[key].slot;
+    if (slot) destroyFinder(slot.finder);
+    states[key].slot = null;
   }
 }

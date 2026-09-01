@@ -57,13 +57,22 @@ describe("grepSearchMeta", () => {
     expect(meta.truncated).toBe(false);
   });
 
-  it("drops tail file groups when the byte budget is exceeded", () => {
+  it("drops tail file groups and flags truncation when the byte budget is exceeded", () => {
     const tight: RetentionCaps = { ...caps, searchMetaMaxBytes: 200 };
     const meta = grepSearchMeta(retainGrepMatches([0, 1, 2, 3, 4].map(match), tight), tight) as {
       files: unknown[];
+      truncated: boolean;
     };
-    expect(meta.files.length).toBeGreaterThan(0);
     expect(meta.files.length).toBeLessThan(3);
+    expect(meta.truncated).toBe(true);
+  });
+
+  it("byte-caps the paths shape too (glob cards)", () => {
+    const tight: RetentionCaps = { ...caps, searchMetaMaxBytes: 60 };
+    const page = globPage(["very/long/path/one.ts", "very/long/path/two.ts", "very/long/path/three.ts"], caps, ".");
+    const meta = globSearchMeta(page, tight) as { paths: unknown[]; truncated: boolean };
+    expect(meta.paths.length).toBeLessThan(3);
+    expect(meta.truncated).toBe(true);
   });
 });
 

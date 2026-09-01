@@ -75,6 +75,9 @@ export async function apply(ctx: PluginContext, config?: Partial<ResolvedConfig>
   }
   ctx.effect(() => () => releaseFinders(), "dsh-frecency: release native finders");
 
+  ctx.tools.register(defineGrepTool(caps));
+  ctx.tools.register(defineGlobTool(caps));
+
   ctx.systemPrompt.section({
     name: "tool:grep",
     order: ctx.systemPrompt.getSectionOrder("TOOL_GREP"),
@@ -91,7 +94,4 @@ export async function apply(ctx: PluginContext, config?: Partial<ResolvedConfig>
       "A pattern with no \"/\" matches basenames at any depth, so \"*\" matches every file in the tree rather than its top level. " +
       "Results are files only, never directories, and come from a resident index ordered by file frecency (recently accessed or modified files first).",
   });
-
-  ctx.tools.register(defineGrepTool(caps));
-  ctx.tools.register(defineGlobTool(caps));
 }

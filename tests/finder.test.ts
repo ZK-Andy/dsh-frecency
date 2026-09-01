@@ -84,6 +84,29 @@ describe("getWorkspaceFinder", () => {
     FakeFinder.nextScanReady = false;
     await expect(getWorkspaceFinder("/ws")).rejects.toThrow("waitForScan");
   });
+
+  it("destroys the finder when the index readiness wait fails", async () => {
+    FakeFinder.nextIndexReady = false;
+    await expect(getWorkspaceFinder("/ws")).rejects.toThrow("waitForIndexReady");
+    expect(created[0]!.destroyed).toBe(1);
+    // The slot stays clean: the next acquire starts from scratch.
+    FakeFinder.nextIndexReady = true;
+    await getWorkspaceFinder("/ws");
+    expect(created).toHaveLength(2);
+  });
+
+  it("serializes concurrent acquires onto one shared finder", async () => {
+    const [a, b] = await Promise.all([getWorkspaceFinder("/ws"), getWorkspaceFinder("/ws")]);
+    expect(a).toBe(b);
+    expect(created).toHaveLength(1);
+  });
+
+  it("settles concurrent acquires on different base paths without leaks or double destroy", async () => {
+    const [a, b] = await Promise.all([getWorkspaceFinder("/ws"), getWorkspaceFinder("/other")]);
+    expect(created).toHaveLength(2);
+    expect(a.destroyed).toBe(1);
+    expect(b.destroyed).toBe(0);
+  });
 });
 
 describe("getEphemeralFinder", () => {
