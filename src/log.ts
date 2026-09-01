@@ -1,10 +1,28 @@
-/** Host logger captured at apply time; plugin execution logs land in the host log (~/.dsh/logs/host.log). */
-let info: ((message: string) => void) | null = null;
+import { appendFileSync } from "node:fs";
+import { homedir } from "node:os";
+import { join } from "node:path";
+
+/**
+ * Plugin evidence log. The desktop host.log only carries the Electron shell's
+ * own channels — plugin-level logger.info is level-gated away — so serves are
+ * proven by appending to a dedicated file next to it.
+ */
+const LOG_FILE = join(homedir(), ".dsh", "logs", "dsh-frecency.log");
+
+let host: { info?(...args: unknown[]): void } | null = null;
 
 export function setLogger(logger: { info?(...args: unknown[]): void } | undefined): void {
-  info = logger?.info !== undefined ? (message: string) => logger.info?.(`dsh-frecency: ${message}`) : null;
+  host = logger ?? null;
 }
 
 export function pluginLog(message: string): void {
-  info?.(message);
+  host?.info?.(`dsh-frecency: ${message}`);
+  // The vitest guard keeps unit runs from touching the user's real dsh home.
+  if (process.env.VITEST === undefined) {
+    try {
+      appendFileSync(LOG_FILE, `[${new Date().toISOString()}] dsh-frecency: ${message}\n`);
+    } catch {
+      // No writable dsh home (e.g. CI); the in-process log line still stands.
+    }
+  }
 }
