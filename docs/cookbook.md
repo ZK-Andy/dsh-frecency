@@ -23,7 +23,7 @@
 ## 验证与取证
 
 - **遮蔽是否生效的判别**：会话内 grep 一个已知词，比对该词的 rg 计数（尊重 gitignore）与引擎返回项数——两者语义不同（rg 按行、引擎按匹配出现），计数一致即内置在服务；另外 `grep fff /proc/<pid>/maps` 会撞地址 hex 伪匹配（如 `[vsyscall]`），须按路径字段 awk 过滤，`libfff_c.so` 仅在 `FileFinder.create()` 时映射、import 不映射，可据此判定 apply 是否执行。
-- **真宿主**：`node dsh --profile <p>` 进程才是 harness（`~/.dsh/logs/run-marker.json` 的 pid 是桌面壳）；落盘日志 `~/.dsh/logs/host.log`。
+- **真宿主**：`node dsh --profile <p>` 进程才是 harness（`~/.dsh/logs/run-marker.json` 的 pid 是桌面壳）；落盘日志 `~/.dsh/logs/host.log`。插件级 logger.info 不进 host.log（级别门控 + 该文件只承载桌面壳通道）——本插件的装载/检索证据写 `~/.dsh/logs/dsh-frecency.log`。
 - **预设组合的作用域事实**：同一 `agent.cordis.yml` 的所有行共享一个 scope，同名工具两行并存即 `tool "grep" is already registered in this scope`——跨行遮蔽不存在，同名替换必须整行进行；跨平面遮蔽由 agent own 层实现（per-agent 注册，见 ADR `mount-via-per-agent-registration`）。
 - **per-agent 注册的程序与坑**：配方 = `ctx.on("agent/created")` + `agent.ctx.inject(["tools","systemPrompt"], register)` + `agent/disposed` dispose fiber（第一方先例 `dsh-tool-subagent`）；`agents` 服务**不可**声明进 `inject`——boot 会阻塞等待该服务，headless 组合不提供，Entry 永挂。headless 单任务模式做验证载体需模型环境变量（如 `COMMANDCODE_API_KEY_*`），缺失时 boot 后静默挂起。
 
