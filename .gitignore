@@ -4,6 +4,7 @@
 /.plan/
 
 # Node / npm / pnpm
+.npmrc
 node_modules/
 dist/
 *.tsbuildinfo
