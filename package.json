@@ -31,21 +31,23 @@
     "prepack": "pnpm check"
   },
   "dependencies": {
-    "@ff-labs/fff-node": "^0.10.6"
+    "@ff-labs/fff-node": "^0.10.6",
+    "picomatch": "^4.0.3"
   },
   "peerDependencies": {
+    "@deepseek-ai/dsh-output-retention": "^0.1.2-alpha.3",
+    "@deepseek-ai/dsh-tool-fs-search": "^0.1.2-alpha.3",
     "@deepseek-ai/dsh-tools": "^0.1.2-alpha.3",
-    "@deepseek-ai/dsh-tool-fs-search": "^0.1.2-alpha.3"
-  },
-  "peerDependenciesMeta": {
-    "@deepseek-ai/dsh-tool-fs-search": {
-      "optional": true
-    }
+    "@deepseek-ai/schemastery": "^3.18.1"
   },
   "devDependencies": {
-    "@deepseek-ai/dsh-tools": "0.1.2-alpha.3",
+    "@deepseek-ai/dsh-output-retention": "0.1.2-alpha.3",
     "@deepseek-ai/dsh-tool-fs-search": "0.1.2-alpha.3",
+    "@deepseek-ai/dsh-tools": "0.1.2-alpha.3",
+    "@deepseek-ai/dsh-util-values": "0.1.2-alpha.3",
+    "@deepseek-ai/schemastery": "^3.18.1",
     "@types/node": "^26.2.0",
+    "@types/picomatch": "^4.0.3",
     "tsdown": "^0.22.14",
     "typescript": "^5.9.3",
     "vitest": "^4.1.10"
