@@ -7,9 +7,11 @@
 ```
 src/
 ├── index.ts          # 插件入口：name / inject / apply(ctx)
-├── finder.ts         # 常驻 FileFinder 单例（同 cwd 复用，cwd 变化销毁重建）
-├── grep.ts           # grep 工具定义（调 finder.grep()）
-├── glob.ts           # glob 工具定义（调 finder.glob()）
+├── finder.ts         # 常驻 FileFinder 槽位（workspace 常驻 + ephemeral，串行化获取）
+├── scope.ts          # 搜索作用域绑定（path 参数内/外判定、显示路径转换）
+├── mapping.ts        # fff 结果 → 内置形状映射 + include/path 过滤
+├── grep.ts           # grep 工具定义（分页取全，调 finder.grep()）
+├── glob.ts           # glob 工具定义（分页取全，调 finder.glob()）
 └── presentation.ts   # 呈现层：复用内置呈现构造器
 ```
 
@@ -25,15 +27,17 @@ src/
 
 ## 生命周期
 
-- `apply()` 时对当前 cwd 创建 `FileFinder`（`FileFinder.create()` 拿 native 锁，同 cwd 至多一份）；后续检索复用。
+- `apply()` 时对当前 cwd 创建 `FileFinder`（注册期探测），后续检索复用 workspace 槽位。
+- `path` 参数在 workspace 内：复用 workspace 槽位 + prefix 过滤；在 workspace 外：使用独立的 ephemeral 槽位（至多一份、替换式、结果转绝对路径），不驱逐 workspace 槽位。
+- 槽位获取经 per-slot 串行化：并发调用共享在途创建，不产生泄漏实例或双重销毁。
 - cwd 变化：销毁旧实例再重建，避免多份索引驻留。
-- 插件卸载（disposer）时 `destroy()`，释放 native 资源与文件 watcher。
+- 插件卸载（`ctx.effect` disposer）时 `releaseFinders()`，释放 native 资源与文件 watcher。
 
 ## 引擎 API 事实（实测，实现以此为准）
 
 - `FileFinder.create()` / `grep()` 等返回 `Result` 包装，取 `.value`；失败分支在包装上，不抛异常。
 - 内容索引异步构建：grep 前须 `await finder.waitForIndexReady(timeout)`；文件扫描另有 `waitForScan`。
-- grep 结果元素自带 `lineNumber` / `col` / `matchRanges` / `lineContent` / `gitStatus` / frecency 分数；分页走 `nextCursor` / `cursor`。
+- grep 结果元素自带 `lineNumber` / `col` / `matchRanges` / `lineContent` / `gitStatus` / frecency 分数；grep 分页走 `nextCursor` / `cursor` 游标，glob 分页走 `pageIndex` + `totalMatched` 穷尽判定——工具层均取至穷尽（有界 4 页）。
 
 ## 降级路径
 

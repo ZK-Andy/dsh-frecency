@@ -62,7 +62,7 @@ DeepSeek Harness (dsh) 的 `grep` / `glob` 工具由 `@deepseek-ai/dsh-tool-fs-s
 ### 3.1 引擎：`@ff-labs/fff-node`（Rust，原生绑定）
 
 - **API**：`FileFinder.create({ basePath, frecencyDbPath?, enableContentIndexing? })` 创建常驻索引实例；`fileSearch()` / `glob()` / `grep()` / `directorySearch()` / `mixedSearch()` 检索；`destroy()` / `isDestroyed` / `waitForScan()` 管理生命周期。
-- **frecency**：`frecencyDbPath`（SQLite frecency 库），结果带 `frecencyBoost` / `frecency` / `frecency`（access/modification 打分）。
+- **frecency**：`frecencyDbPath`（SQLite frecency 库），结果带 frecency 打分（access/modification 两维）。
 - **依赖**：`ffi-rs`（Node FFI）+ 各平台 `@ff-labs/fff-bin-*` 预编译二进制（darwin/linux/win32/android × x64/arm64，gnu/musl）。
 - **零 pi 依赖**：`@ff-labs/fff-node` 的 `peerDependencies` 为空、`dependencies` 仅 `ffi-rs`，完全独立于 pi 的 ABI——因此可作为纯库被 dsh 插件直接调用。
 
