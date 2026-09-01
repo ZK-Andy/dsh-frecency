@@ -2,6 +2,16 @@
 
 [English](./README.md) | 中文
 
+<p align="center">
+  <a href="https://www.npmjs.com/package/dsh-frecency"><img src="https://img.shields.io/npm/v/dsh-frecency?style=flat&label=npm&color=4D6BFE" alt="npm"></a>
+  <a href="https://www.npmjs.com/package/dsh-frecency"><img src="https://img.shields.io/npm/dt/dsh-frecency?style=flat&label=downloads&color=4D6BFE" alt="downloads"></a>
+  <a href="https://github.com/ZK-Andy/dsh-frecency/stargazers"><img src="https://img.shields.io/github/stars/ZK-Andy/dsh-frecency?style=flat&label=stars&color=4D6BFE" alt="stars"></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a>
+  <a href="https://github.com/ZK-Andy/dsh-frecency/actions/workflows/ci.yml"><img src="https://github.com/ZK-Andy/dsh-frecency/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="./docs/testing.md"><img src="https://img.shields.io/badge/tests-55%2F55-brightgreen" alt="tests"></a>
+  <a href="https://nodejs.org"><img src="https://img.shields.io/badge/node-%3E%3D22-339933" alt="node >= 22"></a>
+</p>
+
 一个 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 插件：用**常驻索引 + frecency 排序**的文件搜索替换内置 `grep` / `glob` 工具。
 
 内置工具每次调用都 spawn 一个全新的 ripgrep 进程、从零扫描；长会话与多子代理场景下同样的搜索会重复执行数十次。dsh-frecency 为每个工作目录保留一份常驻索引（Rust [fff](https://github.com/dmtrKovalenko/fff) 引擎，经 `@ff-labs/fff-node`），重复检索毫秒级命中热内存，结果按访问/修改 frecency 排序。

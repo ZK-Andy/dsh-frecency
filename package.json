@@ -10,6 +10,8 @@
     "type": "git",
     "url": "git+https://github.com/ZK-Andy/dsh-frecency.git"
   },
+  "homepage": "https://github.com/ZK-Andy/dsh-frecency#readme",
+  "bugs": "https://github.com/ZK-Andy/dsh-frecency/issues",
   "engines": {
     "node": ">=22"
   },
