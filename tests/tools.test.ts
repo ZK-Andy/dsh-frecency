@@ -33,6 +33,25 @@ const defaults = {
   cursorQueue: [] as Record<string, never>[],
 };
 
+const rgDefaults = vi.hoisted(() => ({
+  /** `null` = runRgFiles rejects (spawn failure / non-zero rg exit). */
+  result: null as { paths: string[]; complete: boolean } | null,
+  error: null as string | null,
+  calls: [] as { argv: string[]; cwd: string; budget: number }[],
+}));
+
+vi.mock("../src/rg.ts", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../src/rg.ts")>();
+  return {
+    ...actual,
+    runRgFiles: (argv: string[], cwd: string, budget: number) => {
+      rgDefaults.calls.push({ argv, cwd, budget });
+      if (rgDefaults.error !== null) return Promise.reject(new Error(rgDefaults.error));
+      return Promise.resolve(rgDefaults.result ?? { paths: [], complete: true });
+    },
+  };
+});
+
 vi.mock("@ff-labs/fff-node", () => ({
   FileFinder: {
     create: (options: { basePath: string }) => {
@@ -98,6 +117,9 @@ beforeEach(async () => {
   defaults.grepResult = { ok: true, value: { items: [], nextCursor: null, totalMatched: 0 } };
   defaults.globResult = { ok: true, value: { items: [], totalMatched: 0 } };
   defaults.cursorQueue = [];
+  rgDefaults.result = null;
+  rgDefaults.error = null;
+  rgDefaults.calls = [];
 });
 
 describe("grep tool", () => {
@@ -214,34 +236,65 @@ describe("grep tool", () => {
 });
 
 describe("glob tool", () => {
-  it("maps fff items onto paths with the built-in root field", async () => {
+  it("serves through the built-in rg contract, mapped onto display paths", async () => {
     const tool = defineGlobTool(caps);
-    defaults.globResult = {
-      ok: true,
-      value: { items: [{ relativePath: "docs/design.md" }, { relativePath: "README.md" }], totalMatched: 2 },
-    };
+    rgDefaults.result = { paths: ["docs/design.md", "README.md"], complete: true };
     const value = (await tool.execute!({ pattern: "*.md" }, execFor("/ws"))) as { root: string; paths: string[] };
     expect(value).toEqual({ root: ".", paths: ["docs/design.md", "README.md"], truncated: false });
-    expect(instances[0]!.globCalls[0]!.pattern).toBe("*.md");
+    // The exact argv the built-in glob tool spawns: files mode, mtime order,
+    // hidden + ignored included, VCS metadata pruned, config injection blocked.
+    expect(rgDefaults.calls[0]!.argv).toEqual([
+      "--no-config",
+      "--files",
+      "--glob=*.md",
+      "--sort=modified",
+      "--no-ignore",
+      "--hidden",
+      ...[".git", ".svn", ".hg", ".bzr", ".jj", ".sl"].flatMap((name) => [`--glob=!**/${name}`, `--glob=!**/${name}/**`]),
+    ]);
+    expect(rgDefaults.calls[0]!.cwd).toBe("/ws");
+    expect(instances).toHaveLength(0);
   });
 
-  it("prefix-filters when a path argument selects a subtree", async () => {
+  it("narrows the traversal and prefix-filters when a path argument selects a subtree", async () => {
     const tool = defineGlobTool(caps);
-    defaults.globResult = {
-      ok: true,
-      value: { items: [{ relativePath: "docs/design.md" }, { relativePath: "README.md" }], totalMatched: 2 },
-    };
+    rgDefaults.result = { paths: ["docs/design.md", "README.md"], complete: true };
     const value = (await tool.execute!({ pattern: "*.md", path: "docs" }, execFor("/ws"))) as {
       root: string;
       paths: string[];
     };
     expect(value.paths).toEqual(["docs/design.md"]);
+    expect(rgDefaults.calls[0]!.argv.slice(-2)).toEqual(["--", "docs"]);
   });
 
-  it("reuses the resident finder across calls", async () => {
+  it("reports truncation when the fetch budget cut the listing", async () => {
     const tool = defineGlobTool(caps);
+    rgDefaults.result = { paths: ["a.txt"], complete: false };
+    const value = (await tool.execute!({ pattern: "*" }, execFor("/ws"))) as { truncated: boolean };
+    expect(value.truncated).toBe(true);
+  });
+
+  it("falls back to the resident index when rg fails, reusing the finder across calls", async () => {
+    const tool = defineGlobTool(caps);
+    rgDefaults.error = "spawn rg ENOENT";
+    defaults.globResult = {
+      ok: true,
+      value: { items: [{ relativePath: "docs/design.md" }, { relativePath: "README.md" }], totalMatched: 2 },
+    };
     await tool.execute!({ pattern: "*.md" }, execFor("/ws"));
     await tool.execute!({ pattern: "*.ts" }, execFor("/ws"));
     expect(instances).toHaveLength(1);
+    expect(instances[0]!.globCalls.map((call) => call.pattern)).toEqual(["*.md", "*.ts"]);
+  });
+
+  it("falls back to the ephemeral slot for an out-of-workspace path", async () => {
+    const tool = defineGlobTool(caps);
+    rgDefaults.error = "rg exited with code 2";
+    defaults.globResult = { ok: true, value: { items: [{ relativePath: "a.txt" }], totalMatched: 1 } };
+    const value = (await tool.execute!({ pattern: "*.txt", path: "/elsewhere" }, execFor("/ws"))) as {
+      paths: string[];
+    };
+    expect(value.paths).toEqual(["/elsewhere/a.txt"]);
+    expect(instances[0]!.basePath).toBe("/elsewhere");
   });
 });

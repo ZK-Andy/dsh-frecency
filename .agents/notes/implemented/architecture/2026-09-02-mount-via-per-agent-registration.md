@@ -23,4 +23,4 @@ Status: implemented
 
 - 收益：装完即用，任何预设下遮蔽成立；子代理逐 agent 获得注册、共享一份常驻索引；`agent/disposed` 随 agent 回收，插件卸载经 cordis effect 统一释放。
 - 代价：注册从一次变每 agent 一次（定义无状态，代价可忽略）；依赖 `agent/created` 事件面（第一方 dsh-tool-subagent / dsh-file-reference-local 同款先例）；headless 类无 agent 生命周期的部署未验证。
-- Deferred：上游 fs-search provider seam 跟进；引擎 glob 与内置 glob 的 ignored/hidden 语义对齐；isDefinition/git 标注扩 schema（v2）。
+- Deferred：上游 fs-search provider seam 跟进；isDefinition/git 标注扩 schema（v2）。glob 的 ignored/hidden 语义对齐已由 `glob-serves-via-rg-parity` 收口。

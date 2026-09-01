@@ -16,48 +16,65 @@ function normalize(p: string): string {
   }
 }
 
-export interface SearchScope {
-  finder: FileFinder;
-  /** Absolute base path the finder indexed. */
+/**
+ * Scope basis without engine binding: where a search roots, how results are
+ * displayed. Shared by the engine-backed tools (grep) and the rg-parity glob,
+ * which must not create a finder just to know where to run.
+ */
+export interface ScopeBase {
+  /** Absolute base path a search is rooted at. */
   basePath: string;
   /** Workspace-relative prefix a `path` argument selected, or `undefined` for the whole root. */
   prefix: string | undefined;
-  /** Whether engine-relative results must be surfaced as absolute paths (out-of-workspace scope). */
+  /** Whether results must be surfaced as absolute paths (out-of-workspace scope). */
   displayAbsolute: boolean;
-  /** Convert an engine-relative result path to the path the model should see. */
+  /** Whether engine access goes through the ephemeral slot (out-of-workspace scope). */
+  ephemeral: boolean;
+  /** Convert a base-relative result path to the path the model should see. */
   toDisplay(relativePath: string): string;
 }
 
 /**
- * Bind one search call to a finder. A `path` argument inside the workspace reuses
- * the resident workspace finder with a prefix filter; a path outside it gets the
- * ephemeral slot (at most one such finder alive at a time), with results surfaced
- * as absolute paths so downstream `read` calls resolve.
+ * Bind one search call to a scope. A `path` argument inside the workspace roots
+ * at the workspace with a prefix filter; a path outside it roots at itself and
+ * surfaces results as absolute paths so downstream `read` calls resolve.
  */
-export async function resolveScope(pathArg: string | undefined, workdir: string): Promise<SearchScope> {
+export function resolveScopeBase(pathArg: string | undefined, workdir: string): ScopeBase {
   if (pathArg === undefined) {
-    const finder = await getWorkspaceFinder(workdir);
-    return { finder, basePath: workdir, prefix: undefined, displayAbsolute: false, toDisplay: (p) => p };
+    return { basePath: workdir, prefix: undefined, displayAbsolute: false, ephemeral: false, toDisplay: (p) => p };
   }
   const requested = isAbsolute(pathArg) ? resolve(pathArg) : resolve(workdir, pathArg);
   const workspaceRoot = normalize(workdir);
   const searchRoot = normalize(requested);
   if (searchRoot === workspaceRoot || isInsideRoot(workspaceRoot, searchRoot)) {
-    const finder = await getWorkspaceFinder(workdir);
     return {
-      finder,
       basePath: workdir,
       prefix: prefixWithinRoot(searchRoot, workspaceRoot),
       displayAbsolute: false,
+      ephemeral: false,
       toDisplay: (p) => p,
     };
   }
-  const finder = await getEphemeralFinder(searchRoot);
   return {
-    finder,
     basePath: searchRoot,
     prefix: undefined,
     displayAbsolute: true,
+    ephemeral: true,
     toDisplay: (p) => resolve(searchRoot, p),
   };
+}
+
+export interface SearchScope extends ScopeBase {
+  finder: FileFinder;
+}
+
+/**
+ * Bind one search call to a finder. A `path` argument inside the workspace reuses
+ * the resident workspace finder with a prefix filter; a path outside it gets the
+ * ephemeral slot (at most one such finder alive at a time).
+ */
+export async function resolveScope(pathArg: string | undefined, workdir: string): Promise<SearchScope> {
+  const base = resolveScopeBase(pathArg, workdir);
+  const finder = base.ephemeral ? await getEphemeralFinder(base.basePath) : await getWorkspaceFinder(workdir);
+  return { ...base, finder };
 }

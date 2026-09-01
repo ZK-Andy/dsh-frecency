@@ -17,6 +17,7 @@
 
 ## 本地开发与 e2e
 
+- 内置 glob 的执行契约（`@deepseek-ai/dsh-tool-fs-search/lib/index.js` 的 `buildGlobCommand` + spawn seam）：`rg --no-config --files --glob=<pattern> --sort=modified --no-ignore --hidden` + 6 个 VCS 目录（.git/.svn/.hg/.bzr/.jj/.sl）各两条排除 glob，`-- <path>` 指根；二进制 = `@vscode/ripgrep` 打包二进制（非 PATH）；exit 1 = 零结果（非失败）；`--no-config` 防宿主 `RIPGREP_CONFIG_PATH` 预处理器注入。`--sort=modified` 为旧→新升序。
 - 本地开发用 `--patch` 绝对路径覆盖层 + 本地 `node_modules` 软链（裸导入解析）；正式 `dsh plugin add` 不受影响。
 - e2e 一律用默认 headless profile，勿新造 profile——`dsh-code-runtime-worker` 不在 npm，新 profile 拉不到依赖。
 

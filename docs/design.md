@@ -97,13 +97,13 @@ dsh-frecency/
     ├── index.ts          # apply(): 建单例 FileFinder + register 遮蔽工具
     ├── finder.ts         # 常驻索引单例（同 cwd 复用，cwd 变化 destroy 重建）
     ├── grep.ts           # grep 工具实现（调 finder.grep()）
-    ├── glob.ts           # glob 工具实现（调 finder.glob()/fileSearch()）
+    ├── glob.ts           # glob 工具实现（rg 平价模式，rg 不可用降级 finder.glob()）
     └── presentation.ts   # SearchResultView 呈现（对齐内置 grep 卡片）
 ```
 
 ### 4.2 覆盖内置 grep/glob 的机制
 
-DSH 工具注册表 `@deepseek-ai/dsh-tools` 按层合并、**nearest scope 的同名条目遮蔽较远者**，且 agent 自己的层（own）赢过一切继承层。实测（2026-09-02 真实环境验证）修正了设计期假设：内置 `grep`/`glob` 由 agent 预设挂载于 agent 平面，host 平面 bundle 的同名注册永远更远；无预设部署（headless）则同层冲突、注册抛错。因此同名遮蔽的落点是 **per-agent 注册**：插件监听 `agent/created`，把工具注册进每个 agent 自己的层——任何预设下都成立，子代理共享同一份常驻索引。机制细节与装载形态见 `docs/architecture.md` 与对应 ADR。
+DSH 工具注册表 `@deepseek-ai/dsh-tools` 按层合并、**nearest scope 的同名条目遮蔽较远者**，且 agent 自己的层（own）赢过一切继承层。实测（2026-09-02 真实环境验证）修正了设计期假设：内置 `grep`/`glob` 由 agent 预设挂载于 agent 平面，host 平面 bundle 的同名注册永远更远；无预设部署（headless）则同层冲突、注册抛错。因此同名遮蔽的落点是 **per-agent 注册**：插件监听 `agent/created`，把工具注册进每个 agent 自己的层——任何预设下都成立，子代理共享同一份常驻索引。机制细节与装载形态见 `docs/architecture.md` 与对应 ADR。glob 另有一处实证修正：引擎索引不收 gitignored 文件、`GlobOptions` 无放开开关，与内置 glob 的发现契约漂移——glob 改跑与内置逐参数相同的 `rg --files` 命令（决策见 ADR `glob-serves-via-rg-parity`）。
 
 ### 4.3 生命周期
 
@@ -134,7 +134,7 @@ fff 常驻索引用内存换性能——要明确这个 trade-off 并在设计�
 
 ## 7. 验证计划
 
-- **功能**：装载插件后，`grep` / `glob` 走 fff 索引；同 cwd 多次检索命中同索引；cwd 变化重建。
+- **功能**：装载插件后，`grep` 走 fff 索引（同 cwd 多次检索命中同索引；cwd 变化重建），`glob` 与内置工具同结果（含 ignored/hidden、VCS 排除、mtime 序）。
 - **性能**：大仓库重复检索延迟对比（内置 spawn vs 常驻索引）。
 - **内存**：长会话/多子代理场景下宿主 RSS 对比；单份索引内存实测。
 - **降级**：native 二进制缺失时回退内置 ripgrep，行为不变。

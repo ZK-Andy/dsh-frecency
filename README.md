@@ -12,7 +12,7 @@ English | [中文](./README.zh.md)
   <a href="https://nodejs.org"><img src="https://img.shields.io/badge/node-%3E%3D22-339933" alt="node >= 22"></a>
 </p>
 
-A [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) plugin that replaces the built-in `grep` / `glob` file-search tools with a **resident index + frecency ranking**.
+A [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) plugin that takes over the built-in `grep` / `glob` file-search tools: `grep` runs on a **resident index with frecency ranking**, `glob` mirrors the built-in discovery semantics exactly.
 
 The built-in tools spawn a fresh ripgrep process on every call and scan from scratch. In long sessions with many parallel subagents, the same searches run dozens of times. dsh-frecency keeps one resident index per working directory (the Rust [fff](https://github.com/dmtrKovalenko/fff) engine via `@ff-labs/fff-node`), so repeated searches hit hot memory in milliseconds, ranked by access/modification frecency.
 
@@ -22,13 +22,14 @@ The built-in tools spawn a fresh ripgrep process on every call and scan from scr
 dsh plugin --profile <profile> add dsh-frecency
 ```
 
-Restart dsh and start a session — `grep` / `glob` keep their names and schemas but now run on the resident index, whatever agent preset you use. The built-in search tools are mounted per-session on the agent plane, which beats any host-plane registration, so the plugin registers into **each agent's own layer** at agent creation (first-party precedent: `dsh-tool-subagent`). Config `enabled: false` or removing the plugin falls back to the built-in ripgrep tools.
+Restart dsh and start a session — `grep` / `glob` keep their names and schemas; `grep` hits the resident index and `glob` serves the same results as the built-in tool, whatever agent preset you use. The built-in search tools are mounted per-session on the agent plane, which beats any host-plane registration, so the plugin registers into **each agent's own layer** at agent creation (first-party precedent: `dsh-tool-subagent`). Config `enabled: false` or removing the plugin falls back to the built-in ripgrep tools.
 
 ## What you get
 
 - **Same tool names** — `grep` / `glob` keep their names and schemas; the model switches with zero prompt changes.
-- **Resident index** — repeated searches reuse one in-memory index; single-digit milliseconds per call.
-- **Frecency ranking** — frequently opened / recently modified files surface first.
+- **Resident index (grep)** — repeated content searches reuse one in-memory index; single-digit milliseconds per call.
+- **Frecency ranking (grep)** — frequently opened / recently modified files surface first.
+- **Built-in-parity glob** — glob runs the same fixed `rg --files` invocation as the built-in tool: hidden and ignored files included, VCS metadata excluded, modification-time order. If ripgrep is unavailable, it degrades to the resident index.
 - **Git-aware index** — the engine tracks working-tree state per file; explicit annotations in tool output land in a follow-up release.
 - **Graceful fallback** — if the native engine can't load, the plugin steps aside and the built-in ripgrep tools keep working.
 
