@@ -6,10 +6,23 @@ export interface GrepToolMatch {
   path: string;
   lineNumber: number;
   line: string;
+  /** Whether this line is a code definition (engine-classified; present only on definition lines). */
+  isDefinition?: boolean;
+  /** The file's git working-tree status ("clean", "modified", …); the engine always reports it. */
+  gitStatus: string;
 }
 
 export function toMatch(item: GrepMatch): GrepToolMatch {
-  return { path: item.relativePath, lineNumber: item.lineNumber, line: item.lineContent };
+  return {
+    path: item.relativePath,
+    lineNumber: item.lineNumber,
+    line: item.lineContent,
+    // The engine emits `isDefinition` only on definition lines; gated on === true
+    // so an explicit `false` on a non-definition line is dropped (not surfaced as a
+    // false-y field the ADR promises is omitted).
+    ...(item.isDefinition === true ? { isDefinition: true } : {}),
+    gitStatus: item.gitStatus,
+  };
 }
 
 /**

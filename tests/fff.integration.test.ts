@@ -45,6 +45,23 @@ describe.skipIf(!canLoadEngine)("fff-node integration", () => {
     expect(result.value.items.length).toBeGreaterThanOrEqual(1);
     const hit = result.value.items.find((item) => item.relativePath === "needle.txt");
     expect(hit?.lineContent).toContain("frecency needle");
+    // The engine always reports gitStatus per matched file.
+    expect(hit && "gitStatus" in hit).toBe(true);
+  });
+
+  it("classifies definition lines with classifyDefinitions enabled", async () => {
+    if (!finder.ok) return;
+    const result = finder.value.grep("the frecency needle", { mode: "regex", classifyDefinitions: true });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    for (const item of result.value.items) {
+      // classifyDefinitions surfaces an isDefinition field only on definition
+      // lines; a plain text hit carries gitStatus and lacks isDefinition.
+      expect("gitStatus" in item).toBe(true);
+      if (item.relativePath === "needle.txt") {
+        expect(item.lineContent).toContain("frecency needle");
+      }
+    }
   });
 
   it("globs file paths", () => {

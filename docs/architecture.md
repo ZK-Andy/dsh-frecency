@@ -42,7 +42,7 @@ src/
 
 - `FileFinder.create()` / `grep()` 等返回 `Result` 包装，取 `.value`；失败分支在包装上，不抛异常。
 - 内容索引异步构建：grep 前须 `await finder.waitForIndexReady(timeout)`；文件扫描另有 `waitForScan`。
-- grep 结果元素自带 `lineNumber` / `col` / `matchRanges` / `lineContent` / `gitStatus` / frecency 分数；grep 分页走 `nextCursor` / `cursor` 游标——工具层取至穷尽。引擎 `glob()`（`pageIndex` + `totalMatched` 穷尽判定）只在 glob 的 rg 降级路径上使用。
+- grep 结果元素自带 `lineNumber` / `col` / `matchRanges` / `lineContent` / `gitStatus` / frecency 分数，且 `classifyDefinitions: true` 时另带 `isDefinition`；grep 分页走 `nextCursor` / `cursor` 游标——工具层取至穷尽。输出 schema 在内置 `{path,lineNumber,line}` 基础上额外透传两个可选字段：`isDefinition`（定义行 true，非定义行省略）与 `gitStatus`（文件 git 工作树状态）。引擎 `glob()`（`pageIndex` + `totalMatched` 穷尽判定）只在 glob 的 rg 降级路径上使用。
 
 ## 降级路径
 

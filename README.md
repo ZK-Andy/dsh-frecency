@@ -30,7 +30,8 @@ Restart dsh and start a session — `grep` / `glob` keep their names and schemas
 - **Resident index (grep)** — repeated content searches reuse one in-memory index; single-digit milliseconds per call.
 - **Frecency ranking (grep)** — frequently opened / recently modified files surface first.
 - **Built-in-parity glob** — glob runs the same fixed `rg --files` invocation as the built-in tool: hidden and ignored files included, VCS metadata excluded, modification-time order. If ripgrep is unavailable, it degrades to the resident index.
-- **Git-aware index** — the engine tracks working-tree state per file; explicit annotations in tool output land in a follow-up release.
+- **Annotated grep output** — engine-classified `isDefinition` and per-file `gitStatus` ride along in grep results, so the model can spot definition lines and modified files without re-reading.
+- **Git-aware index** — the engine tracks working-tree state per file and surfaces it as `gitStatus` in results.
 - **Graceful fallback** — if the native engine can't load, the plugin steps aside and the built-in ripgrep tools keep working.
 
 See [docs/design.md](./docs/design.md) for the full design rationale.

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { filterByGlob, filterByPrefix, isInsideRoot, prefixWithinRoot, toMatch } from "../src/mapping.ts";
 
 describe("toMatch", () => {
-  it("maps fff fields onto the built-in match shape", () => {
+  it("maps fff fields onto the built-in match shape, gitStatus always carried", () => {
     expect(
       toMatch({
         relativePath: "docs/design.md",
@@ -20,7 +20,50 @@ describe("toMatch", () => {
         accessFrecencyScore: 0,
         modificationFrecencyScore: 0,
       }),
-    ).toEqual({ path: "docs/design.md", lineNumber: 7, line: "hello" });
+    ).toEqual({ path: "docs/design.md", lineNumber: 7, line: "hello", gitStatus: "clean" });
+  });
+
+  it("carries gitStatus through with its engine value", () => {
+    expect(
+      toMatch({
+        relativePath: "src/a.ts",
+        fileName: "a.ts",
+        gitStatus: "modified",
+        lineContent: "x",
+        lineNumber: 1,
+        col: 0,
+        byteOffset: 0,
+        matchRanges: [[0, 1]],
+        isBinary: false,
+        size: 2,
+        modified: 0,
+        totalFrecencyScore: 0,
+        accessFrecencyScore: 0,
+        modificationFrecencyScore: 0,
+      }),
+    ).toEqual({ path: "src/a.ts", lineNumber: 1, line: "x", gitStatus: "modified" });
+  });
+
+  it("carries isDefinition on a definition line and omits it otherwise", () => {
+    const base = {
+      fileName: "a.ts",
+      relativePath: "src/a.ts",
+      gitStatus: "clean",
+      lineContent: "fn",
+      lineNumber: 1,
+      col: 0,
+      byteOffset: 0,
+      matchRanges: [[0, 2]],
+      isBinary: false,
+      size: 2,
+      modified: 0,
+      totalFrecencyScore: 0,
+      accessFrecencyScore: 0,
+      modificationFrecencyScore: 0,
+    };
+    expect(toMatch({ ...base, isDefinition: true })).toMatchObject({ isDefinition: true });
+    expect(toMatch({ ...base, isDefinition: false })).not.toHaveProperty("isDefinition");
+    expect(toMatch({ ...base })).not.toHaveProperty("isDefinition");
   });
 });
 

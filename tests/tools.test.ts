@@ -105,8 +105,8 @@ function execFor(cwd: string) {
   return { agent: { session: { header: { cwd } } } } as never;
 }
 
-function fffItem(relativePath: string, lineNumber: number, line: string) {
-  return { relativePath, fileName: relativePath.split("/").pop(), lineNumber, lineContent: line };
+function fffItem(relativePath: string, lineNumber: number, line: string, gitStatus = "clean") {
+  return { relativePath, fileName: relativePath.split("/").pop(), lineNumber, lineContent: line, gitStatus };
 }
 
 beforeEach(async () => {
@@ -132,15 +132,35 @@ describe("grep tool", () => {
     const value = (await tool.execute!({ pattern: "x" }, execFor("/ws"))) as { matches: unknown[] };
     expect(value).toEqual({
       matches: [
-        { path: "src/b.ts", lineNumber: 2, line: "beta" },
-        { path: "src/a.ts", lineNumber: 1, line: "alpha" },
+        { path: "src/b.ts", lineNumber: 2, line: "beta", gitStatus: "clean" },
+        { path: "src/a.ts", lineNumber: 1, line: "alpha", gitStatus: "clean" },
       ],
       truncated: false,
     });
     expect(instances[0]!.grepCalls[0]).toEqual({
       query: "x",
-      options: { mode: "regex", smartCase: false, pageSize: 500, cursor: null },
+      options: { mode: "regex", smartCase: false, pageSize: 500, cursor: null, classifyDefinitions: true },
     });
+  });
+
+  it("carries isDefinition and gitStatus through to the output", async () => {
+    const tool = defineGrepTool(caps);
+    defaults.grepResult = {
+      ok: true,
+      value: {
+        items: [
+          { ...fffItem("src/a.ts", 1, "fn x"), isDefinition: true, gitStatus: "modified" },
+          fffItem("src/b.ts", 2, "call x"),
+        ],
+        nextCursor: null,
+        totalMatched: 2,
+      },
+    };
+    const value = (await tool.execute!({ pattern: "x" }, execFor("/ws"))) as { matches: unknown[] };
+    expect(value.matches[0]).toMatchObject({ path: "src/a.ts", isDefinition: true, gitStatus: "modified" });
+    // Non-definition lines carry gitStatus but no isDefinition field.
+    expect(value.matches[1]).toMatchObject({ gitStatus: "clean" });
+    expect(value.matches[1]).not.toHaveProperty("isDefinition");
   });
 
   it("applies a workspace-relative path prefix filter", async () => {
@@ -150,7 +170,7 @@ describe("grep tool", () => {
       value: { items: [fffItem("src/a.ts", 1, "a"), fffItem("docs/b.md", 1, "b")], nextCursor: null, totalMatched: 2 },
     };
     const value = (await tool.execute!({ pattern: "x", path: "src" }, execFor("/ws"))) as { matches: unknown[] };
-    expect(value.matches).toEqual([{ path: "src/a.ts", lineNumber: 1, line: "a" }]);
+    expect(value.matches).toEqual([{ path: "src/a.ts", lineNumber: 1, line: "a", gitStatus: "clean" }]);
   });
 
   it("applies the include glob filter after the engine", async () => {
@@ -160,7 +180,7 @@ describe("grep tool", () => {
       value: { items: [fffItem("src/a.ts", 1, "a"), fffItem("src/b.js", 1, "b")], nextCursor: null, totalMatched: 2 },
     };
     const value = (await tool.execute!({ pattern: "x", include: "*.ts" }, execFor("/ws"))) as { matches: unknown[] };
-    expect(value.matches).toEqual([{ path: "src/a.ts", lineNumber: 1, line: "a" }]);
+    expect(value.matches).toEqual([{ path: "src/a.ts", lineNumber: 1, line: "a", gitStatus: "clean" }]);
   });
 
   it("reuses the resident finder across calls with the same workspace", async () => {

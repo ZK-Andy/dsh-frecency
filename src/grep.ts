@@ -44,6 +44,10 @@ const OUTPUT_SCHEMA = {
           path: { type: "string", required: true },
           lineNumber: { type: "integer", required: true },
           line: { type: "string", required: true },
+          /** Present only on engine-classified definition lines. */
+          isDefinition: { type: "boolean" },
+          /** The file's git working-tree status (always present). */
+          gitStatus: { type: "string", required: true },
         },
       },
     },
@@ -81,7 +85,13 @@ export function defineGrepTool(caps: RetentionCaps & { timeoutMs: number }): Too
       let cursor: GrepCursor | null = null;
       let exhausted = false;
       for (let page = 0; page < MAX_PAGES && !exhausted; page += 1) {
-        const options: GrepOptions = { mode: "regex", smartCase: false, pageSize: FETCH_PAGE_SIZE, cursor };
+        const options: GrepOptions = {
+          mode: "regex",
+          smartCase: false,
+          pageSize: FETCH_PAGE_SIZE,
+          cursor,
+          classifyDefinitions: true,
+        };
         const result = unwrap<GrepResult>(scope.finder.grep(input.pattern, options), "grep");
         // The engine silently falls back to literal matching on a bad regex;
         // surface it instead, like the built-in tool's SEARCH_FAILED.

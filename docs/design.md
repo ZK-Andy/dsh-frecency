@@ -36,7 +36,7 @@ DeepSeek Harness (dsh) 的 `grep` / `glob` 工具由 `@deepseek-ai/dsh-tool-fs-s
 
 1. **常驻索引**：同一 cwd 下多次检索复用同一份索引，避免每次重新扫描。
 2. **frecency 排序**：按访问/修改频率给结果排序——用户打开过的文件排在前面，而非每次冷扫描。
-3. **定义优先提示**：`isDefinition` 标记，让模型优先看到定义行（如 `fn`/`struct`/`class`/`def` 开头）。
+3. **定义标注**：`isDefinition` 标记，让模型能在命中集里甄别定义行（如 `fn`/`struct`/`class`/`def` 开头）——仅标注、不重排结果。
 4. **git 状态感知**：结果带 modified / untracked / staged 标注，让模型优先触达正在改动的文件。
 5. **覆盖内置 grep/glob**：让模型用**同一个工具名** `grep` / `glob` 就拿到常驻索引的提速，而不是另加一套新名字。
 
@@ -47,7 +47,7 @@ DeepSeek Harness (dsh) 的 `grep` / `glob` 工具由 `@deepseek-ai/dsh-tool-fs-s
 | 重复检索 | 每次 spawn 新进程、从零扫 | 命中常驻索引，热内存 |
 | 单次延迟 | sub-ms 到数秒（取决于仓库大小 / spawn 开销） | 常驻后 sub-10ms |
 | 结果排序 | ripgrep 按路径/修改顺序 | frecency（访问+修改频率）排序 |
-| 定义识别 | 无 | 定义行优先标注 |
+| 定义识别 | 无 | 定义行标注（`isDefinition`，不重排） |
 | git 状态 | 无内建标注 | modified/untracked/staged 标注 |
 | 多子代理 | 各自从零扫 | 共享同一份常驻索引 |
 
