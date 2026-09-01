@@ -2,6 +2,7 @@ import { defineTool, type ToolDefinition } from "@deepseek-ai/dsh-tools";
 import { parseGrepArgs, presentGrepCall, presentGrepResult } from "@deepseek-ai/dsh-tool-fs-search";
 import type { GrepCursor, GrepMatch, GrepOptions, GrepResult } from "@ff-labs/fff-node";
 import { FrecencyError, unwrap } from "./finder.ts";
+import { pluginLog } from "./log.ts";
 import { filterByGlob, filterByPrefix, toMatch, type GrepToolMatch } from "./mapping.ts";
 import { formatRetainedGrep, grepSearchMeta, retainGrepMatches, type RetentionCaps } from "./presentation.ts";
 import { resolveScope } from "./scope.ts";
@@ -94,6 +95,10 @@ export function defineGrepTool(caps: RetentionCaps & { timeoutMs: number }): Too
       let matches = items.map((item) => ({ ...toMatch(item), path: scope.toDisplay(item.relativePath) }));
       if (scope.prefix) matches = filterByPrefix(matches, scope.prefix);
       if (input.include) matches = filterByGlob(matches, input.include);
+      pluginLog(
+        `grep "${input.pattern}" served by the resident index — ${matches.length} matches in ` +
+          `${new Set(matches.map((match) => match.path)).size} files (workdir ${workdir})`,
+      );
       return { matches, truncated: !exhausted };
     },
     presentCall: presentGrepCall,

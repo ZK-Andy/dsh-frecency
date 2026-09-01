@@ -4,6 +4,7 @@ import type { ToolDefinition } from "@deepseek-ai/dsh-tools";
 import { getWorkspaceFinder, releaseFinders } from "./finder.ts";
 import { defineGlobTool } from "./glob.ts";
 import { defineGrepTool } from "./grep.ts";
+import { pluginLog, setLogger } from "./log.ts";
 import type { RetentionCaps } from "./presentation.ts";
 
 export const name = "dsh-frecency";
@@ -92,6 +93,8 @@ export async function apply(ctx: PluginContext, config?: Partial<ResolvedConfig>
     return;
   }
   ctx.effect(() => () => releaseFinders(), "dsh-frecency: release native finders");
+  setLogger(ctx.logger);
+  pluginLog("armed; shadow grep/glob will be installed per agent on agent/created");
 
   // Shadowing must land in each agent's OWN layer: the built-in grep/glob are
   // mounted by agent presets on the agent plane, which beats any host-plane
@@ -101,6 +104,7 @@ export async function apply(ctx: PluginContext, config?: Partial<ResolvedConfig>
   const installed = new WeakMap<AgentLike, { dispose(): Promise<void> | void }>();
   const install = (agent: AgentLike): void => {
     if (installed.has(agent)) return;
+    pluginLog(`installing shadow grep/glob into agent ${agent.id}`);
     installed.set(
       agent,
       agent.ctx.inject(["tools", "systemPrompt"], (runtime) => {

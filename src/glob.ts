@@ -1,6 +1,7 @@
 import { defineTool, type ToolDefinition } from "@deepseek-ai/dsh-tools";
 import { parseGlobArgs, presentGlobCall, presentGlobResult, toWorkdirRelative } from "@deepseek-ai/dsh-tool-fs-search";
 import { unwrap } from "./finder.ts";
+import { pluginLog } from "./log.ts";
 import { filterByPrefix } from "./mapping.ts";
 import { formatGlobPage, globPage, globSearchMeta, type RetentionCaps } from "./presentation.ts";
 import { resolveScope } from "./scope.ts";
@@ -66,6 +67,7 @@ export function defineGlobTool(caps: RetentionCaps & { timeoutMs: number }): Too
       }
       let paths = relativePaths.map((p) => scope.toDisplay(p));
       if (scope.prefix) paths = filterByPrefix(paths.map((path) => ({ path })), scope.prefix).map((e) => e.path);
+      pluginLog(`glob "${input.pattern}" served by the resident index — ${paths.length} paths (workdir ${workdir})`);
       return {
         root: input.path === undefined ? "." : toWorkdirRelative(input.path, workdir),
         paths,
