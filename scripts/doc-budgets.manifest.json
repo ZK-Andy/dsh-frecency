@@ -1,5 +1,6 @@
 {
   "budgets": [
-    { "path": "AGENTS.md", "max_words": 800 }
+    { "path": "AGENTS.md", "max_words": 800 },
+    { "path": "docs/design.md", "max_words": 1800 }
   ]
 }
