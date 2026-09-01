@@ -5,8 +5,9 @@ DeepSeek Harness (dsh) 插件：常驻索引 + frecency 排序的文件搜索，
 ## 命令
 
 ```sh
-# 构建 / 测试 / 门禁（技术栈确定后填充，见 docs/development.md）
-# 占位：第二步项目专属初始化时补全
+pnpm install
+pnpm check        # typecheck + build (tsdown) + test (vitest)，本地与 CI 同口径
+scripts/setup-hooks.sh   # git hooks 指向 .githooks/（pre-commit/pre-push 增量快检）
 ```
 
 ## 约定

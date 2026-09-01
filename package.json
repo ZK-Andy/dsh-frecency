@@ -1,0 +1,61 @@
+{
+  "name": "dsh-frecency",
+  "version": "0.0.1",
+  "description": "Resident-index + frecency file search for DeepSeek Harness — shadows the built-in grep/glob tools. · DSH 常驻索引 + frecency 文件搜索，同名覆盖内置 grep/glob。",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
+  "keywords": [
+    "deepseek",
+    "harness",
+    "dsh",
+    "dsh-plugin",
+    "search",
+    "frecency",
+    "grep",
+    "glob"
+  ],
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "build": "tsdown",
+    "test": "vitest run --passWithNoTests",
+    "check": "pnpm typecheck && pnpm build && pnpm test",
+    "prepack": "pnpm check"
+  },
+  "dependencies": {
+    "@ff-labs/fff-node": "^0.10.6"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/dsh-tools": "^0.1.2-alpha.3",
+    "@deepseek-ai/dsh-tool-fs-search": "^0.1.2-alpha.3"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/dsh-tool-fs-search": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@deepseek-ai/dsh-tools": "0.1.2-alpha.3",
+    "@deepseek-ai/dsh-tool-fs-search": "0.1.2-alpha.3",
+    "@types/node": "^26.2.0",
+    "tsdown": "^0.22.14",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.10"
+  },
+  "files": [
+    "dist",
+    "cordis.patch.yml",
+    "LICENSE",
+    "README.md",
+    "README.zh.md"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  }
+}
