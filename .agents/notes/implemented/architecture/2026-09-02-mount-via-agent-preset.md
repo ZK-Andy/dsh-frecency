@@ -13,7 +13,7 @@ Status: implemented
 
 ## Decision
 
-dsh-frecency 的工具注册走 **agent 平面**：包内附带从 shipped `standard` 预设派生的预设模板（`preset/`），用户复制到 `~/.dsh/.agent-presets/dsh-frecency/` 并让会话选择该预设；组合行插在 `tool-fs-search` 之后——同一组合内后行更近，nearest-wins 语义下遮蔽生效。host 平面的 bundle 挂载保留（`dsh plugin add` 继续管依赖与包生命周期），但以 `enabled: false` 配置显式置惰，避免双份注册与双份索引。
+dsh-frecency 的工具注册走 **agent 平面**：包内附带从 shipped `standard` 预设派生的预设模板（`preset/`），用户复制到 `~/.dsh/.agent-presets/dsh-frecency/` 并让会话选择该预设；组合内 **dsh-frecency 行整行替换 `tool-fs-search` 行**（本插件复用其呈现构造器与配置面，不需要它挂载）。预设组合的所有行共享一个 scope，同层不可重名（复验实测：并置两行报 `tool "grep" is already registered in this scope`）——同层不可遮蔽，跨平面才可。host 平面的 bundle 挂载保留（`dsh plugin add` 继续管依赖与包生命周期），但以 `enabled: false` 配置显式置惰，避免双份注册与双份索引。
 
 ## Alternatives considered
 

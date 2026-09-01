@@ -24,7 +24,8 @@
 
 - **遮蔽是否生效的判别**：会话内 grep 一个已知词，比对该词的 rg 计数（尊重 gitignore）与引擎返回项数——两者语义不同（rg 按行、引擎按匹配出现），计数一致即内置在服务；另外 `grep fff /proc/<pid>/maps` 会撞地址 hex 伪匹配（如 `[vsyscall]`），须按路径字段 awk 过滤，`libfff_c.so` 仅在 `FileFinder.create()` 时映射、import 不映射，可据此判定 apply 是否执行。
 - **真宿主**：`node dsh --profile <p>` 进程才是 harness（`~/.dsh/logs/run-marker.json` 的 pid 是桌面壳）；落盘日志 `~/.dsh/logs/host.log`。
-- **预设派生程序**：shipped 预设升级后，从新版本的 `standard` 重新复制并重插 dsh-frecency 行（对齐 peerDependencies 锁定的 dsh 版本）；编辑预设的权威指引见 dsh-agent-presets 附带的 `cordis` 预设（创造模式）技能。
+- **预设组合的作用域事实**：同一 `agent.cordis.yml` 的所有行共享一个 scope，同名工具两行并存即 `tool "grep" is already registered in this scope`——跨行遮蔽不存在，同名替换必须整行进行；遮蔽只发生在平面之间（预设 standing scope 遮蔽 host 平面）。
+- **预设派生程序**：shipped 预设升级后，从新版本的 `standard` 重新复制并以 dsh-frecency 行整行替换 `tool-fs-search` 行（对齐 peerDependencies 锁定的 dsh 版本）；编辑预设的权威指引见 dsh-agent-presets 附带的 `cordis` 预设（创造模式）技能。
 
 ## 流程先例（dotnet 项目）
 

@@ -21,7 +21,7 @@ Then append to `~/.dsh/profiles/<profile>/cordis.patch.yml` (keeps the host-plan
     enabled: false
 ```
 
-Finally select the **dsh-frecency** agent preset when starting a session. DSH resolves tools on two planes: the built-in `grep` / `glob` are mounted per-session by the agent preset (agent plane), which is nearer to the session than any profile bundle (host plane) — so same-name shadowing must happen inside a preset composition. The shipped preset is a copy of the `standard` composition with dsh-frecency inserted after `tool-fs-search`; re-derive it when you upgrade dsh. Removing the preset row falls back to the built-in tools.
+Finally select the **dsh-frecency** agent preset when starting a session. DSH resolves tools on two planes: the built-in `grep` / `glob` are mounted per-session by the agent preset (agent plane), which is nearer to the session than any profile bundle (host plane) — so same-name shadowing must happen inside a preset composition. The shipped preset is a copy of the `standard` composition with the `tool-fs-search` row **replaced** by dsh-frecency (all rows of one preset share a single scope, so both rows cannot coexist); the plugin reuses fs-search's presentation builders, so nothing else is lost. Re-derive the preset when you upgrade dsh; restoring the `tool-fs-search` row (and removing ours) falls back to the built-in tools.
 
 ## What you get
 

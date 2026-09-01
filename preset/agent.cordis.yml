@@ -56,17 +56,15 @@
 - id: tool-fs
   name: '@deepseek-ai/dsh-tool-fs'
 
-- id: tool-fs-search
-  name: '@deepseek-ai/dsh-tool-fs-search'
-  config:
-    sampleOverCapGlobResults: false
-
-# dsh-frecency shadows the built-in grep/glob with a resident-index engine.
-# Same-plane row AFTER tool-fs-search: nearest scope wins, so these two tools
-# resolve here rather than to the row above. Remove this row to fall back to
+# dsh-frecency REPLACES the tool-fs-search row: all rows of one preset
+# composition share a single scope, where a second "grep" registration
+# collides — same-name shadowing happens between planes, not between sibling
+# rows. Restore the tool-fs-search row (and remove this one) to fall back to
 # the built-in ripgrep tools.
 - id: dsh-frecency
   name: dsh-frecency
+  config:
+    sampleOverCapGlobResults: false
 
 # ── background jobs ────────────────────────────────────────────────────────
 
