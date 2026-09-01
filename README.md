@@ -8,7 +8,7 @@ English | [中文](./README.zh.md)
   <a href="https://github.com/ZK-Andy/dsh-frecency/stargazers"><img src="https://img.shields.io/github/stars/ZK-Andy/dsh-frecency?style=flat&label=stars&color=4D6BFE" alt="stars"></a>
   <a href="./LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a>
   <a href="https://github.com/ZK-Andy/dsh-frecency/actions/workflows/ci.yml"><img src="https://github.com/ZK-Andy/dsh-frecency/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <a href="./docs/testing.md"><img src="https://img.shields.io/badge/tests-55%2F55-brightgreen" alt="tests"></a>
+  <a href="./docs/testing.md"><img src="https://img.shields.io/badge/tests-67%2F67-brightgreen" alt="tests"></a>
   <a href="https://nodejs.org"><img src="https://img.shields.io/badge/node-%3E%3D22-339933" alt="node >= 22"></a>
 </p>
 
