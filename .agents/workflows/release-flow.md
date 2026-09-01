@@ -10,6 +10,6 @@
 
 ## 已知坑位速查
 
-- pnpm `minimumReleaseAge` 会把过新版本从 `@latest` 解析排除——重试或钉版本。
+- `minimumReleaseAge` 供应链策略核验**整份** profile 锁文件：其中任何一个发布未满约 24 小时的包都会让 `dsh plugin add`/`remove` 整体失败（dsh-market 上游 issue #39）。解法 = 市场强制更新同款参数，`dsh plugin add` 透传给 pnpm：`dsh plugin --profile <p> add --config.minimumReleaseAge=0 <pkg>`；或把过新版本写进 profile `pnpm-workspace.yaml` 的 `minimumReleaseAgeExclude`（该文件已有先例条目）。
 - `dsh.bundle` 声明 + `cordis.patch.yml` 必须随包发布，否则 `dsh plugin add` 装不进 bundle 层。
 - 原生依赖发版前按 [cookbook](../../docs/cookbook.md) 的 `allowBuilds` 判定程序核实（`ffi-rs`/`fff-bin-*` 实测纯预编译，非必需）。
