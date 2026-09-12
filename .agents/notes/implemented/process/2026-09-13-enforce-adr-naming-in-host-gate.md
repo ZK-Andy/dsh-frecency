@@ -13,18 +13,18 @@ Status: implemented
 
 把心源仓 `verify-adr-format.mts` 的命名判据移植进本仓 `.py` 门禁，规则事实仍单家于 [.agents/notes/README.md](../../README.md)：
 
-- 路径必须恰为 `<lifecycle>/<class>/<name>.md` 三段；lifecycle ∈ {proposed, implemented, rejected}，class ∈ 六元封闭集。**不识别路径一律报违约**（fail-closed），豁免面仅顶层 `README.md` / `AGENTS.md`，且只认一层深度——深位同名件照常受检。
-- 文件名走 `^(\d{4}-\d{2}-\d{2})-([a-z0-9]+(?:-[a-z0-9]+)*)\.md$`；日期须是真实日历日（`2026-02-31`、非闰年 `02-29` 皆违约），不早于 1970，且不晚于 UTC 今日 +1 天（作者本地日期可领先 UTC 一天的容差）。
+- 移植判据本体：路径形状（fail-closed，不识别路径一律报违约）、lifecycle/class 封闭集、文件名正则，以及日期的日历性、上界与下界。规则文本单家于 [.agents/notes/README.md](../../README.md)，本笔记不复述。
+- 保留心源仓的两处宽容语义：日期上界为 UTC 今日 +1 天（作者本地日期可领先 UTC 一天），顶层豁免只认一层深度——深位同名件照常受检。
 - `archived/` 与 `.zh.md` 仍整树跳过（归档冻结检查与双语配对规则不在本次移植面）。
 
 ## Alternatives considered
 
 - **维持评审强制（把 README 的承诺改成"约定"）**：零实现成本，但规则失去机器兜底：杂散笔记与错日期只能靠人发现，历史证明这正是漏检来源；README 写硬规则而不强制，等于把契约降级成习惯。
-- **整件移植心源仓的 `.mts`**：判据最全（含归档冻结校验、py 兼容原语）。落败原因：本仓门禁族是 Python 单轨，引入 TS 需要 Node 工具链与双轨维护，而本仓 notes 树只有 7 篇；移植判据本体即可，工具形态留在本仓既有栈内。
+- **整件移植心源仓的 `.mts`**：判据最全（含归档冻结校验、py 兼容原语）。落败原因：本仓门禁族是 Python 单轨，引入 TS 需要 Node 工具链与双轨维护，而本仓 notes 树只有 8 篇；移植判据本体即可，工具形态留在本仓既有栈内。
 - **只校验文件名、不校验路径形状与 lifecycle/class**：实现最小，但保留"不识别路径静默跳过"的逃逸面——杂散笔记仍能绕过全部检查，恰是本次要堵的口。
 
 ## Consequences
 
-- 收益：命名/日期/路径形状由门禁强制，评审不再承担这份机械核对；错误信息给到具体路径与期望形态。真实树实测 7 篇全绿，无需整改存量。
+- 收益：命名/日期/路径形状由门禁强制，评审不再承担这份机械核对；错误信息给到具体路径与期望形态。真实树实测 8 篇全绿（含本笔记），无需整改存量。
 - 代价：`scripts/verify-adr-format.py` 相对 devops-template 源本产生较大漂移（新增判据与 `--self-test`），同步模板时需保留；`--self-test` 夹具随之覆盖命名面（见 [gate-self-test-fixtures](../testing/2026-09-13-gate-self-test-fixtures.md)）。
 - 已知缺口：心源仓 `verify-archived-agent-notes.mts` 的归档冻结校验与双语 `.zh.md` 配对规则未移植，本仓 `archived/` 仍为门禁盲区；重新引入归档检查时按该件判据移植。

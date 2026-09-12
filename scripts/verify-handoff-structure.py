@@ -269,7 +269,7 @@ def _self_test() -> int:
 
 
 def main() -> int:
-    if len(sys.argv) > 1 and sys.argv[1] == "--self-test":
+    if sys.argv[1:] == ["--self-test"]:
         return _self_test()
 
     parser = argparse.ArgumentParser(description="Verify HANDOFF.md structure")

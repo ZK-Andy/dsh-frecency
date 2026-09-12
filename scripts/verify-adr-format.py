@@ -87,7 +87,8 @@ def validate_name(rel: Path) -> list[str]:
 
     today = datetime.datetime.now(datetime.timezone.utc).date()
     if note_date > today + datetime.timedelta(days=1):
-        errors.append(f"{rel}: date '{date_str}' is after today ({today.isoformat()})")
+        errors.append(f"{rel}: date '{date_str}' is after today ({today.isoformat()}) "
+                      f"(tolerance: today + 1)")
     if note_date.year < 1970:
         errors.append(f"{rel}: date '{date_str}' is before the epoch (1970)")
     return errors
@@ -153,51 +154,104 @@ def _self_test() -> int:
                 "## Consequences\n\nconsequences\n\n")
 
     today = datetime.datetime.now(datetime.timezone.utc).date()
+    tomorrow = (today + datetime.timedelta(days=1)).isoformat()
     future = (today + datetime.timedelta(days=2)).isoformat()
 
-    # (files, expected checked count, expected error fragments in order, desc)
+    # (files, expected checked count, expected error strings exactly, desc)
     cases = [
         ({"implemented/feature/2026-08-27-naming-ok.md": note_body("implemented")},
          1, [], "conforming implemented note -> pass"),
         ({"proposed/feature/2026-08-27-proposal-ok.md": note_body("proposed", "Proposal")},
          1, [], "conforming proposed note -> pass"),
+        ({f"implemented/feature/{tomorrow}-tolerance-ok.md": note_body("implemented")},
+         1, [], "date at the UTC+1 ceiling -> pass"),
         ({"implemented/refactor/2026-08-27-naming-ok.md": note_body("implemented")},
-         1, ["class 'refactor' not in"], "invalid class 'refactor' -> fail"),
+         1, ["implemented/refactor/2026-08-27-naming-ok.md: class 'refactor' not in "
+             "['feature', 'bug-fix', 'simplification', 'architecture', 'process', 'testing']"],
+         "invalid class 'refactor' -> fail"),
+        ({"draft/feature/2026-08-27-naming-ok.md": note_body("implemented")},
+         1, ["draft/feature/2026-08-27-naming-ok.md: lifecycle 'draft' not in "
+             "['proposed', 'implemented', 'rejected']",
+             "draft/feature/2026-08-27-naming-ok.md: Status 'implemented' "
+             "mismatches folder 'draft'"],
+         "invalid lifecycle 'draft' -> fail"),
         ({"implemented/feature/2026-08-27-Naming-Ok.md": note_body("implemented")},
-         1, ["filename must be"], "uppercase in filename -> fail"),
+         1, ["implemented/feature/2026-08-27-Naming-Ok.md: filename must be "
+             "'yyyy-mm-dd-<kebab-slug>.md' (lowercase, hyphen-separated words; "
+             "no uppercase/underscore/other)"],
+         "uppercase in filename -> fail"),
         ({"implemented/feature/2026-08-27_bad-name.md": note_body("implemented")},
-         1, ["filename must be"], "underscore in filename -> fail"),
+         1, ["implemented/feature/2026-08-27_bad-name.md: filename must be "
+             "'yyyy-mm-dd-<kebab-slug>.md' (lowercase, hyphen-separated words; "
+             "no uppercase/underscore/other)"],
+         "underscore in filename -> fail"),
         ({f"implemented/feature/{future}-naming-ok.md": note_body("implemented")},
-         1, ["is after today"], "date after today -> fail"),
+         1, [f"implemented/feature/{future}-naming-ok.md: date '{future}' is after today "
+             f"({today.isoformat()}) (tolerance: today + 1)"],
+         "date after the tolerance window -> fail"),
         ({"implemented/feature/2026-02-31-naming-ok.md": note_body("implemented")},
-         1, ["is not a real calendar date"], "invalid calendar date -> fail"),
+         1, ["implemented/feature/2026-02-31-naming-ok.md: '2026-02-31' "
+             "is not a real calendar date"],
+         "invalid calendar date -> fail"),
+        ({"implemented/feature/0001-01-01-naming-ok.md": note_body("implemented")},
+         1, ["implemented/feature/0001-01-01-naming-ok.md: date '0001-01-01' "
+             "is before the epoch (1970)"],
+         "date before the epoch -> fail"),
         ({"implemented/2026-08-27-naming-ok.md": note_body("implemented")},
-         1, ["3 segments; got 2"], "path not 3 segments -> fail"),
+         1, ["implemented/2026-08-27-naming-ok.md: path must be exactly "
+             "<lifecycle>/<class>/<name>.md (3 segments; got 2)"],
+         "path not 3 segments -> fail"),
         ({"drafts-scratch.md": "# Agent Note: scratch\n\nStatus: implemented\n"},
-         1, ["3 segments; got 1", "mismatches folder 'drafts-scratch.md'",
-             "missing required section '## Problem'",
-             "missing required section '## Alternatives considered'"],
+         1, ["drafts-scratch.md: path must be exactly <lifecycle>/<class>/<name>.md "
+             "(3 segments; got 1)",
+             "drafts-scratch.md: Status 'implemented' mismatches folder 'drafts-scratch.md'",
+             "drafts-scratch.md: missing required section '## Problem'",
+             "drafts-scratch.md: missing required section '## Alternatives considered'"],
          "stray note outside lifecycle tree -> fail"),
         ({"implemented/feature/README.md": "# Agent Note: stray\n\nStatus: implemented\n"},
-         1, ["filename must be", "missing required section '## Problem'",
-             "missing required section '## Alternatives considered'",
-             "missing required section '## Decision'",
-             "missing required section '## Consequences'"],
+         1, ["implemented/feature/README.md: filename must be 'yyyy-mm-dd-<kebab-slug>.md' "
+             "(lowercase, hyphen-separated words; no uppercase/underscore/other)",
+             "implemented/feature/README.md: missing required section '## Problem'",
+             "implemented/feature/README.md: missing required section '## Alternatives considered'",
+             "implemented/feature/README.md: missing required section '## Decision'",
+             "implemented/feature/README.md: missing required section '## Consequences'"],
          "exempt name below top level -> fail"),
+        ({"implemented/feature/2026-08-27-naming-ok.md":
+          "not a header\n\nStatus: implemented\n\n## Problem\n\np\n\n## Decision\n\nd\n\n"
+          "## Alternatives considered\n\na\n\n## Consequences\n\nc\n"},
+         1, ["implemented/feature/2026-08-27-naming-ok.md: line 1 must be "
+             "'# Agent Note: <title>'"],
+         "missing title line -> fail"),
+        ({"implemented/feature/2026-08-27-naming-ok.md":
+          "# Agent Note: sample\n\n## Problem\n\np\n\n## Decision\n\nd\n\n"
+          "## Alternatives considered\n\na\n\n## Consequences\n\nc\n"},
+         1, ["implemented/feature/2026-08-27-naming-ok.md: must contain "
+             "'Status: <proposed|implemented|rejected>' after the title"],
+         "missing Status line -> fail"),
         ({"implemented/feature/2026-08-27-naming-ok.md": note_body("proposed")},
-         1, ["mismatches folder 'implemented'"], "status-folder mismatch -> fail"),
+         1, ["implemented/feature/2026-08-27-naming-ok.md: Status 'proposed' "
+             "mismatches folder 'implemented'"],
+         "status-folder mismatch -> fail"),
         ({"implemented/feature/2026-08-27-naming-ok.md":
           "# Agent Note: sample\n\nStatus: implemented\n\n## Problem\n\np\n\n"
           "## Decision\n\nd\n\n## Consequences\n\nc\n"},
-         1, ["missing required section '## Alternatives considered'"],
+         1, ["implemented/feature/2026-08-27-naming-ok.md: missing required section "
+             "'## Alternatives considered'"],
          "missing mandatory section -> fail"),
         ({"implemented/feature/2026-08-27-naming-ok.md":
           note_body("implemented").replace("## Decision", "## Plan")},
-         1, ["missing required section '## Decision'",
-             "implemented note must not contain '## Plan'"],
+         1, ["implemented/feature/2026-08-27-naming-ok.md: missing required section '## Decision'",
+             "implemented/feature/2026-08-27-naming-ok.md: implemented note must not "
+             "contain '## Plan'"],
          "spec heading in implemented -> fail"),
+        ({"proposed/feature/2026-08-27-naming-ok.md": note_body("proposed")},
+         1, ["proposed/feature/2026-08-27-naming-ok.md: missing required section "
+             "'## Proposal'"],
+         "proposed note without Proposal section -> fail"),
         ({"archived/feature/anything goes.md": "garbage\n"}, 0, [],
          "archived tree skipped -> pass"),
+        ({"implemented/feature/2026-08-27-naming-ok.zh.md": "garbage\n"}, 0, [],
+         "bilingual mirror skipped -> pass"),
         ({"README.md": "index\n"}, 0, [], "top-level README exempt -> pass"),
     ]
 
@@ -210,9 +264,7 @@ def _self_test() -> int:
                 p.parent.mkdir(parents=True, exist_ok=True)
                 p.write_text(text, encoding="utf-8")
             checked, errors = _scan(tree)
-            ok = (checked == expected_checked and len(errors) == len(expected)
-                  and all(frag in err for frag, err in zip(expected, errors)))
-            if ok:
+            if checked == expected_checked and errors == expected:
                 print(f"  ok: {desc}")
             else:
                 print(f"  ✗ {desc}: expected checked={expected_checked} "
@@ -226,13 +278,12 @@ def _self_test() -> int:
 
 
 def main() -> int:
+    if sys.argv[1:] == ["--self-test"]:
+        return _self_test()
+
     ap = argparse.ArgumentParser(description="Verify Agent Note (ADR) format")
     ap.add_argument("root", nargs="?", default=".agents/notes")
-    ap.add_argument("--self-test", action="store_true",
-                    help="run the offline fixture self-check instead")
     args = ap.parse_args()
-    if args.self_test:
-        return _self_test()
 
     root = Path(args.root)
     if not root.is_dir():
