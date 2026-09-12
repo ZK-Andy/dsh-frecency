@@ -9,9 +9,12 @@ Checks, for every .md file under the given root (default: current directory):
   - `](https://…)` / `](mailto:…)` / `](<…>)` -> skipped (external)
   - bare filenames or absolute paths are NOT validated here
 
-By default, `skills/` directories are excluded: vendored skill sources keep
-their upstream path references, which only resolve after path mapping (see
-docs/ADAPTATION.md section 3). Pass --include-skills to check them anyway.
+By default, vendored and generated trees are excluded: `node_modules/`,
+`.pnpm/`, and the `.noogenesis/` gene-bank cache (a nested clone of the
+Noogenesis repository, ignored in .gitignore). `skills/` directories are also
+excluded because vendored skill sources keep their upstream path references,
+which only resolve after path mapping; pass --include-skills to check them
+anyway.
 
 Usage: python3 verify-md-links.py [root_dir] [--include-skills]
 Exit code 0 = pass, 1 = violations.
@@ -62,7 +65,7 @@ def main() -> int:
     for md in sorted(root.rglob("*.md")):
         if not args.include_skills and "skills" in md.parts:
             continue
-        if "node_modules" in md.parts or ".pnpm" in md.parts:
+        if "node_modules" in md.parts or ".pnpm" in md.parts or ".noogenesis" in md.parts:
             continue
         text = md.read_text(encoding="utf-8")
         for target in LINK_RE.findall(text):

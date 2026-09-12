@@ -17,4 +17,5 @@ coverage/
 # 工具缓存
 /.cache/
 /.codegraph/
+/.noogenesis/
 .zcode/
