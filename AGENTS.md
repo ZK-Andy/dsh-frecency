@@ -26,6 +26,7 @@ python3 scripts/verify-handoff-structure.py # HANDOFF 家庭结构
 python3 scripts/verify-doc-budgets.py --manifest scripts/doc-budgets.manifest.json
 python3 scripts/verify-md-links.py         # 相对链接/锚点
 scripts/change-scope.sh [<base> <head>]   # 变更范围（评审/push 前置）
+# 改脚本判据时跑夹具自测：--self-test（verify-handoff-structure / verify-md-links）
 ```
 
 ## 命令

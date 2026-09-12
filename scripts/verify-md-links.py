@@ -19,6 +19,7 @@ path references, which only resolve after path mapping; pass --include-skills
 to check them anyway.
 
 Usage: python3 verify-md-links.py [root_dir] [--include-skills]
+       python3 verify-md-links.py --self-test   # offline fixture self-check
 Exit code 0 = pass, 1 = violations.
 """
 
@@ -56,17 +57,12 @@ def heading_slugs(path: Path) -> set[str]:
     return slugs
 
 
-def main() -> int:
-    ap = argparse.ArgumentParser()
-    ap.add_argument("root", nargs="?", default=".")
-    ap.add_argument("--include-skills", action="store_true",
-                    help="also check skills/ (vendored sources, upstream refs)")
-    args = ap.parse_args()
-    root = Path(args.root)
+def _scan(root: Path, include_skills: bool) -> tuple[int, list[str]]:
+    """Return (checked targets, errors) for the Markdown tree under root."""
     errors: list[str] = []
     checked = 0
     for md in sorted(root.rglob("*.md")):
-        if not args.include_skills and "skills" in md.parts:
+        if not include_skills and "skills" in md.parts:
             continue
         if EXCLUDED_PARTS.intersection(md.parts):
             continue
@@ -89,6 +85,72 @@ def main() -> int:
                 frag = target.split("#", 1)[1]
                 if frag and frag not in heading_slugs(resolved):
                     errors.append(f"{md}: dead anchor '#{frag}' in '{target}'")
+    return checked, errors
+
+
+def _self_test() -> int:
+    """Offline fixture self-check over synthetic Markdown trees."""
+    import tempfile
+
+    # (files, include_skills, expected errors after the "<path>: " prefix, desc)
+    cases = [
+        ({"docs/a.md": "[t](b.md)\n", "docs/b.md": "# B\n"}, False, [],
+         "resolving relative link -> pass"),
+        ({"docs/a.md": "[t](missing.md)\n"}, False,
+         ["missing target 'missing.md'"], "missing target -> fail"),
+        ({"docs/a.md": "[t](b.md#nope)\n", "docs/b.md": "# B\n"}, False,
+         ["dead anchor '#nope' in 'b.md#nope'"], "dead anchor -> fail"),
+        ({"docs/a.md": "[t](b.md#b)\n", "docs/b.md": "# B\n"}, False, [],
+         "heading slug anchor -> pass"),
+        ({"docs/a.md": "[t](b.md#pinned)\n", "docs/b.md": '<a id="pinned"></a>\n'},
+         False, [], "explicit <a id> anchor -> pass"),
+        ({"docs/a.md": "no links here\n"}, False, [], "no links -> pass"),
+        ({"skills/x.md": "[t](missing.md)\n"}, False, [],
+         "skills/ excluded by default -> pass"),
+        ({"skills/x.md": "[t](missing.md)\n"}, True,
+         ["missing target 'missing.md'"], "--include-skills checks skills/ -> fail"),
+        ({"node_modules/x.md": "[t](missing.md)\n",
+          ".pnpm/y.md": "[t](missing.md)\n",
+          ".noogenesis/genes-cache/z.md": "[t](missing.md)\n"}, False, [],
+         "excluded parts at any depth -> pass"),
+        ({"docs/a.md": "[t](gone.md)\n",
+          ".noogenesis/genes-cache/z.md": "[t](draft.md)\n"}, False,
+         ["missing target 'gone.md'"],
+         "excluded dangling link stays silent while a repo-owned link fails"),
+    ]
+
+    failed = 0
+    with tempfile.TemporaryDirectory() as td:
+        for i, (files, include_skills, expected, desc) in enumerate(cases):
+            tree = Path(td) / f"tree-{i}"
+            for rel, text in files.items():
+                p = tree / rel
+                p.parent.mkdir(parents=True, exist_ok=True)
+                p.write_text(text, encoding="utf-8")
+            _, errors = _scan(tree, include_skills)
+            actual = [e.split(": ", 1)[1] for e in errors]
+            if actual != expected:
+                print(f"  ✗ {desc}: expected {expected}, got {actual}")
+                failed = 1
+            else:
+                print(f"  ok: {desc}")
+    if failed == 0:
+        print("== verify-md-links self-test passed ==")
+    else:
+        print("== verify-md-links self-test failed ==", file=sys.stderr)
+    return failed
+
+
+def main() -> int:
+    if len(sys.argv) > 1 and sys.argv[1] == "--self-test":
+        return _self_test()
+
+    ap = argparse.ArgumentParser()
+    ap.add_argument("root", nargs="?", default=".")
+    ap.add_argument("--include-skills", action="store_true",
+                    help="also check skills/ (vendored sources, upstream refs)")
+    args = ap.parse_args()
+    checked, errors = _scan(Path(args.root), args.include_skills)
 
     print(f"Checked {checked} link targets")
     if errors:
