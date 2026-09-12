@@ -13,7 +13,7 @@ Status: implemented
 
 以**机制级两臂**测量作为设计文档 §7 的性能/内存口径，工具与结果同时入仓：
 
-- 索引臂 = 插件实际调用的引擎 API（查询参数与分页循环对齐 `src/grep.ts`），内置臂 = 每次 spawn 内置工具相同 argv 的 `rg`；两臂都不含插件呈现与 harness 渲染，数字因此是端到端下界。
+- 索引臂 = 插件实际调用的引擎 API（查询参数与分页循环对齐 `src/grep.ts`），内置臂 = 每次 spawn 内置工具相同 argv 的 `rg`；两臂的边界与数字含义单家于 [performance.md](../../../../docs/performance.md)。
 - 测量工具入仓 `scripts/bench-resident-index.mjs`；结果单家于 [docs/performance.md](../../../../docs/performance.md)（口径、复现、实测表、解读、未覆盖项），并纳入 `doc-budgets.manifest.json` 预算。
 - 对外声明以实测为准：README 双语改述为「复用常驻索引、省去每次 spawn」，未再带未经取证的毫秒级承诺（数值与口径单家于 [performance.md](../../../../docs/performance.md)）。
 - 端到端工具延迟由插件日志自身产出：serve 行带执行段耗时、索引就绪行带一次性构建耗时，两者分开记账，读法单家于 [cookbook](../../../../docs/cookbook.md)。选择文件日志是因为插件级 logger 不进 host.log（见 cookbook 的真宿主条目）。
