@@ -120,7 +120,7 @@ DSH 工具注册表 `@deepseek-ai/dsh-tools` 按层合并、**nearest scope 的�
 
 fff 常驻索引用内存换性能——要明确这个 trade-off 并在设计上可控：
 
-- 本机实测索引增量与上游 fff 口径（14k≈26MB、100k≈几百 MB、约 360 bytes/文件）均见 [performance](performance.md)；二进制/超大文件/不可 grep 的会被跳过，可改用 memory-map 文件而非匿名 RAM。
+- 索引内存的实测口径，以及上游数字为何不可与本机结果比较，见 [performance](performance.md)；二进制/超大文件/不可 grep 的会被跳过，可改用 memory-map 文件而非匿名 RAM。
 - **关键**：在多子代理 / 长会话"大量重复搜索"下，**一份共享常驻索引的内存 < 反复 spawn + 各自攒 stdout 到 Node 堆**——这正是该项目要改善的累积问题。
 
 设计上预留**可控性**（可配置开关/上限）：大仓库、低复用率场景可禁用（回退内置 ripgrep），避免为"搜索一两次"付出索引内存。

@@ -28,6 +28,8 @@
 - **预设组合的作用域事实**：同一 `agent.cordis.yml` 的所有行共享一个 scope，同名工具两行并存即 `tool "grep" is already registered in this scope`——跨行遮蔽不存在，同名替换必须整行进行；跨平面遮蔽由 agent own 层实现（per-agent 注册，见 ADR `mount-via-per-agent-registration`）。
 - **per-agent 注册的程序与坑**：配方 = `ctx.on("agent/created")` + `agent.ctx.inject(["tools","systemPrompt"], register)` + `agent/disposed` dispose fiber（第一方先例 `dsh-tool-subagent`）；`agents` 服务**不可**声明进 `inject`——boot 会阻塞等待该服务，headless 组合不提供，Entry 永挂。headless 单任务模式做验证载体需模型环境变量（如 `COMMANDCODE_API_KEY_*`），缺失时 boot 后静默挂起。
 
+- **性能/内存基线怎么跑**（[脚本]）：`node scripts/bench-resident-index.mjs gen <dir> --files 14000` 建确定性合成树（每目录 100 个文件、约 4KB、每 100 个含标记词 `benchmarkmarker`；拒绝写入非空目录）；`node scripts/bench-resident-index.mjs run <dir> --iterations 20` 输出两臂 p50/p95 与索引 RSS 增量，跑 3 轮取极值区间。口径与实测见 [performance.md](performance.md)。前提：RSS 读 `/proc/self/status`，非 Linux 平台为 `null`；`--rg` 指定 ripgrep 二进制（默认走可执行文件 `rg`）。
+
 ## 市场与发布（[发布]）
 
 - **dsh 市场页「介绍」来源**：dsh-market 的插件介绍显示来自 **awesome-dsh-plugin 汇编清单**的 `data/plugins/<owner>__<repo>.yml` 条目，**不**读 npm 包描述/README。因此「市场页介绍空白」通常是**未收录**，而非包信息缺失——npm 包 description/keywords/readme 齐全与否与市场页展示是两套来源。

@@ -28,6 +28,6 @@ dsh 内置 grep/glob（`@deepseek-ai/dsh-tool-fs-search`）每次调用 spawn �
 ## Consequences
 
 - 收益：重复检索命中常驻索引；模型无感切换（同工具名）；frecency + git 状态让模型优先触达活跃文件；多子代理共享一份索引。
-- 代价：内存换性能（14k 文件仓库约 26MB 常驻），需预留可配置开关供大仓库/低复用场景回退内置 ripgrep；遮蔽后需自带 `SearchResultView` 对齐内置卡片呈现。
+- 代价：内存换性能（实测口径见 [performance](../../../../docs/performance.md)），需预留可配置开关供大仓库/低复用场景回退内置 ripgrep；遮蔽后需自带 `SearchResultView` 对齐内置卡片呈现。
 - 边界承诺：只降低重复检索成本，不消除子代理各自上下文在 Node 堆的累积；frecency 对冷文件/首次搜索提升有限。
 - 遗留复验：同名遮蔽机制需在真实 dsh 环境复验 presentation 一致性（见 HANDOFF-todos）。
