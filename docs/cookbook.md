@@ -34,6 +34,10 @@
 - **npm README 检测选 .zh.md**：仓库根同时有 `README.md` 与 `README.zh.md` 且都进 `files` 时，npm 检测 readme 字段可能选到 **README.zh.md**（本地 `npm pack`/registry `readme` 所见），导致 npm 页介绍是中文版。若本意英文为主，发布前核 `npm view <pkg> readme` 首行确认选中哪个。
 - **awesome-dsh-plugin 收录前提**：entry 描述含 `: `（冒号+空格）时 YAML 必须加引号，否则解析成嵌套键被 CI 打回（`scripts/check-submission.mjs --base <sha>` 本地可校验）；硬性门槛「仓库创建 ≥1 天 且 ≥10 提交」由 CI 自动检查，不足即提示 resubmit，重提无负面影响。
 
+## 门禁与仓库卫生（[脚本]）
+
+- **工具缓存克隆同时污染门禁扫描面与索引**：`verify-md-links.py` 用 `rglob("*.md")` 遍历工作树，嵌套克隆（自带 `.git`，如 `.noogenesis/genes-cache/`）内的悬空链接会被算成本仓 FAIL；同一目录未忽略时 `git add .` 只在索引留下一条 gitlink（mode 160000）而非缓存内容，形成伪 submodule 条目——理由与备选见 [ADR](../.agents/notes/implemented/process/2026-09-13-exclude-vendored-clone-caches-from-md-links.md)。处置 = 两处并改（`.gitignore` 工具缓存段忽略整树 + 门禁 `EXCLUDED_PARTS` 加同名路径片段）。复验 fixture：临建树内 `.noogenesis/` 与 `docs/` 各放一条悬空链接，`python3 scripts/verify-md-links.py <tmp>` 应只报 `docs/` 那条（`Checked N` 只计解析成功的目标，失败项不计）。
+
 ## 流程先例（dotnet 项目）
 
 > 指向 `/mnt/work/dotnet-deepseek-harness-desktop/`（本仓 AI 协作骨架与 HANDOFF 治理的参照源）。
