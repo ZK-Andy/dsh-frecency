@@ -46,7 +46,7 @@ scripts/setup-hooks.sh   # git hooks 指向 .githooks/（pre-commit / pre-push�
 
 真实 harness 的本地 e2e：构建后用默认 headless profile 加 `--patch` 覆盖层（指向 `./dist/index.js`）启动。
 
-质量门禁：`python3 scripts/verify-adr-format.py && python3 scripts/verify-doc-budgets.py --manifest scripts/doc-budgets.manifest.json && python3 scripts/verify-md-links.py`。
+质量门禁：`python3 scripts/verify-adr-format.py && python3 scripts/verify-handoff-structure.py && python3 scripts/verify-doc-budgets.py --manifest scripts/doc-budgets.manifest.json && python3 scripts/verify-md-links.py`。
 
 ## 许可
 

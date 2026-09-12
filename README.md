@@ -46,7 +46,7 @@ scripts/setup-hooks.sh   # point git hooks at .githooks/ (pre-commit / pre-push)
 
 Local e2e against a real harness: build, then boot the default headless profile with a `--patch` overlay pointing at `./dist/index.js`.
 
-Quality gates: `python3 scripts/verify-adr-format.py && python3 scripts/verify-doc-budgets.py --manifest scripts/doc-budgets.manifest.json && python3 scripts/verify-md-links.py`.
+Quality gates: `python3 scripts/verify-adr-format.py && python3 scripts/verify-handoff-structure.py && python3 scripts/verify-doc-budgets.py --manifest scripts/doc-budgets.manifest.json && python3 scripts/verify-md-links.py`.
 
 ## License
 
