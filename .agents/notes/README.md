@@ -13,7 +13,7 @@
 - lifecycle（状态即目录，随状态迁移）：`proposed/` → `implemented/` → `archived/`；另有 `rejected/`。
 - class（封闭集合）：`feature` / `bug-fix` / `simplification` / `architecture`（交付源码）/ `process`（工具流程）/ `testing`。刻意无 `refactor`（与 `simplification` 重叠：判别词"可观察行为是否变化"）。
 - 日期 = 首次提出日，迁移改名不改日期。
-- 文件名 = `yyyy-mm-dd-<kebab-slug>.md`：slug 小写连字符（`[a-z0-9]+(-[a-z0-9]+)*`），禁大写/下划线/中文；日期为合法日历日、不早于 1970 且不晚于 **UTC** 今日（允许 +1 天时区容差，即 UTC 明日仍可）。此命名格式由 `verify-adr-format.py` 机器强制（详见「门禁」），违约即 FAIL。
+- 文件名 = `yyyy-mm-dd-<kebab-slug>.md`：slug 小写连字符（`[a-z0-9]+(-[a-z0-9]+)*`），禁大写/下划线/中文；日期为合法日历日、不早于 1970 且不晚于 **UTC 今日 +1 天**（含；容差覆盖本地日期领先 UTC 的作者）。此命名格式由 `verify-adr-format.py` 机器强制（详见「门禁」），违约即 FAIL。
 
 ## 格式
 
@@ -36,6 +36,6 @@ python3 scripts/verify-adr-format.py               # 路径/命名/日期格式 
 python3 scripts/verify-adr-format.py --self-test   # 离线夹具自测（违约样例应 FAIL，合规样例应 PASS）
 ```
 
-夹具自测覆盖 `verify-adr-format.py` / `verify-handoff-structure.py` / `verify-md-links.py`（`verify-doc-budgets.py` 尚无）。
+夹具自测覆盖 `verify-adr-format.py` / `verify-handoff-structure.py` / `verify-md-links.py`（三者的 `--self-test` 都要求是唯一参数）；`verify-doc-budgets.py` 尚无夹具，也不接受该参数。
 
 当前正文中文单语（双语镜像 `.zh.md` + `.i18n.yaml` 配对暂不启用，README/docs 层启用时恢复）。

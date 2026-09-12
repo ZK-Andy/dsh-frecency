@@ -5,8 +5,9 @@ Checks, for every .md under the notes root (default: .agents/notes), excluding
 archived/ and .zh.md files:
   1. The path is exactly <lifecycle>/<class>/<name>.md, with lifecycle in
      {proposed, implemented, rejected} and class in the closed set. Anything
-     else — beyond the top-level README.md / AGENTS.md — is an error: silently
-     skipping unrecognized paths would let stray notes escape every check.
+     else — beyond the top-level README.md / AGENTS.md, and outside the trees
+     skipped above — is an error: silently skipping unrecognized paths would
+     let stray notes escape every check.
   2. The name is yyyy-mm-dd-<kebab-slug>.md (lowercase, hyphen-separated words;
      no uppercase, underscore or other separators).
   3. The date is a real calendar date, not before 1970 and not after today + 1

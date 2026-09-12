@@ -13,7 +13,7 @@ Status: implemented
 
 门禁脚本内嵌 `--self-test`：离线合成树、不读本仓内容、逐用例断言 `checked` 与错误列表。
 
-- 各门禁的扫描逻辑提为 `_scan(...) -> (checked, errors)`，夹具直接调它而不经参数解析或 stdout 抓取；`verify-md-links.py` 的错误以 `(路径, 消息)` 二元组返回，夹具不解析格式化后的字符串。
+- 各门禁的扫描逻辑提为可被夹具直调的 `_scan`（签名随各门禁的输入面而定），夹具直接调它而不经参数解析或 stdout 抓取；`verify-md-links.py` 的错误以 `(路径, 消息)` 二元组返回，夹具不解析格式化后的字符串。
 - 判据 = 每个用例同时断言 `checked` 计数与**完整错误串列表**（相等比较，不是子串包含：路径前缀与文案漂移都算失败）；任一不符打印 `✗` 并以退出码 1 收场，全部相符打印 `== <gate> self-test passed ==`。
 - `verify-md-links.py`：覆盖链接解析（外部与 `://` 跳过、根锚定 `/` 命中与未命中、空 fragment、散文文件名不校验）与排除面（`skills/` 默认排除与 `--include-skills` 解除、三个排除片段任意层级、混合树只报本仓链接）；判据本身单家于 [exclude-vendored-clone-caches-from-md-links](../process/2026-09-13-exclude-vendored-clone-caches-from-md-links.md)。
 - `verify-adr-format.py`：覆盖路径段数（fail-closed）、lifecycle/class 封闭集、slug 正则、日历日与容差两侧（UTC 今日 +1 通过、+2 拒绝）、1970 下界、状态-目录一致性、骨架缺失、implemented 禁用 spec 标题，以及 archived、`.zh.md`、顶层豁免三条跳过面；判据本身单家于 [enforce-adr-naming-in-host-gate](../process/2026-09-13-enforce-adr-naming-in-host-gate.md)。
@@ -29,5 +29,5 @@ Status: implemented
 ## Consequences
 
 - 收益：命名/路径/日期判据、排除集合与锚点判据都有可复跑的红/绿证据；改判据时先跑 `--self-test` 即暴露回退，不必依赖临时搭树手工验证。
-- 代价：两个脚本体量净增约 80 行（md-links）与约 120 行（adr-format）；夹具与实现同文件，改实现需同步改期望（夹具失败即提醒）。
-- 已知缺口：`verify-doc-budgets.py` 尚无夹具自测；归档冻结检查与双语配对规则未机器化（判据家与缺口见 [enforce-adr-naming-in-host-gate](../process/2026-09-13-enforce-adr-naming-in-host-gate.md)）。
+- 代价：夹具与实现同文件，改实现需同步改期望（夹具失败即提醒）；两个门禁脚本各自增大一个夹具段，精确行数不入文档以免漂移（见提交历史）。
+- 已知缺口：`verify-doc-budgets.py` 尚无夹具，也不接受 `--self-test`；归档冻结检查与双语配对规则未机器化（判据家与缺口见 [enforce-adr-naming-in-host-gate](../process/2026-09-13-enforce-adr-naming-in-host-gate.md)）。
