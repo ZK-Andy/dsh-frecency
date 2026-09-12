@@ -13,7 +13,7 @@ dsh 内置 grep/glob（`@deepseek-ai/dsh-tool-fs-search`）每次调用 spawn �
 
 **引擎：`@ff-labs/fff-node`（0.10.6，Rust fff 的 Node 绑定）；接入机制：`ctx.tools.register()` 同名遮蔽内置 grep/glob。**
 
-- 引擎选型依据：常驻索引命中热内存（单次 sub-10ms）、原生 frecency 打分与 git 状态标注、`peerDependencies` 为空 + 仅 `ffi-rs` 一个依赖（零 pi ABI 纠缠）。
+- 引擎选型依据：常驻索引命中热内存（延迟与内存的实测口径见 [performance](../../../../docs/performance.md)）、原生 frecency 打分与 git 状态标注、`peerDependencies` 为空 + 仅 `ffi-rs` 一个依赖（零 pi ABI 纠缠）。
 - 接入选型依据：DSH 工具注册表是分层作用域，nearest scope 同名条目遮蔽较远者——同名注册即替换内置实现，无需专门 provider seam；进程内调用无协议开销。
 - 前期验证（2026-09-02，机械校验通过）：pnpm + `allowBuilds` 安装成功；`ffi-rs` 1.3.7 与 `@ff-labs/fff-bin-*` 均纯预编译包、零 install 脚本（`allowBuilds` 实际非必需）；Node 26 进程内实测 `FileFinder.create()` ~11ms、grep 命中带行号/`matchRanges`/gitStatus/frecency 分数。设计文档标注的唯一技术卡点解除。
 - 实现 API 事实（以实测为准）：`create()`/`grep()` 等返回 `Result` 包装（取 `.value`）；`grep(query, options)` 签名；内容索引异步构建，grep 前 `await waitForIndexReady(timeout)`。
@@ -22,7 +22,7 @@ dsh 内置 grep/glob（`@deepseek-ai/dsh-tool-fs-search`）每次调用 spawn �
 
 - **已有 `dsh-fff`（纯 JS）**：子序列打分性能弱于 Rust 引擎，且明确不做 read/grep 工具覆盖，只新增 `fff_grep` 等新名字——无法满足"覆盖内置"目标。走零依赖单文件分发是它的形态取舍，非 DSH 硬限制。
 - **fff MCP server（`fff-mcp`）**：进程外、经 MCP 协议往返，开销重；且 MCP 工具无法遮蔽内置 `grep`/`glob` 工具名。
-- **Tantivy 等全文索引引擎**：面向文档级检索打分，本场景是单仓库、sub-10ms、不落盘反向索引，不同类。
+- **Tantivy 等全文索引引擎**：面向文档级检索打分，本场景是单仓库、热内存响应、不落盘反向索引，不同类。
 - **不引入引擎、优化内置调用**（如缓存 ripgrep 结果）：缓存粒度粗、失效复杂，拿不到 frecency/定义标注/git 感知。
 
 ## Consequences

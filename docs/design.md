@@ -23,7 +23,7 @@ DeepSeek Harness (dsh) 的 `grep` / `glob` 工具由 `@deepseek-ai/dsh-tool-fs-s
 
 `fff`（[dmtrKovalenko/fff](https://github.com/dmtrKovalenko/fff)，Rust）是一个**文件搜索 SDK**，而不是一次性的 CLI。它的核心思想是把"扫描 + 索引"做成**一个长驻进程**：
 
-- `FileFinder.create()` 一次，之后每次 `grep()` / `fileSearch()` 命中**热内存**（常驻索引），单次 sub-10ms。
+- `FileFinder.create()` 一次，之后每次 `grep()` / `fileSearch()` 命中**热内存**（常驻索引）；实测延迟与内存见 [performance](performance.md)。
 - 被 opencode、nushell 等用作文件搜索库。
 
 关键点：**fff 的提速来源是"用常驻内存换掉反复 spawn 的扫描成本"**。README 明确："fff fundamentally requires more memory than calling a single child process. That is the primary source of the speedup." 并在重复搜索工作负载下，总体内存反而**低于**反复 spawn ripgrep。
@@ -45,7 +45,7 @@ DeepSeek Harness (dsh) 的 `grep` / `glob` 工具由 `@deepseek-ai/dsh-tool-fs-s
 | 维度 | 内置行为 | dsh-frecency |
 |---|---|---|
 | 重复检索 | 每次 spawn 新进程、从零扫 | 命中常驻索引，热内存 |
-| 单次延迟 | sub-ms 到数秒（取决于仓库大小 / spawn 开销） | 常驻后 4–18ms（1k–14k 合成树实测，见 [performance](performance.md)） |
+| 单次延迟 | sub-ms 到数秒（取决于仓库大小 / spawn 开销） | 常驻后热内存响应（实测口径见 [performance](performance.md)） |
 | 结果排序 | ripgrep 按路径/修改顺序 | frecency（访问+修改频率）排序 |
 | 定义识别 | 无 | 定义行标注（`isDefinition`，不重排） |
 | git 状态 | 无内建标注 | modified/untracked/staged 标注 |
@@ -55,7 +55,7 @@ DeepSeek Harness (dsh) 的 `grep` / `glob` 工具由 `@deepseek-ai/dsh-tool-fs-s
 
 - **不替代 ripgrep 的"终端一次性搜索"**：单次 grep 且立刻退出，`rg` 仍是正确工具；dsh-frecency 的价值在**长会话内重复检索**。
 - **不改变 dsh 的其它搜索/读取工具**：`read`/`write`/`edit` 保持内置；只增强 `grep`/`glob`。
-- **不是全文搜索引擎**：与 Tantivy 等不同，fff 只针对单仓库、优化重复检索的毫秒级响应（实测见 [performance](performance.md)），不落反向索引到磁盘。
+- **不是全文搜索引擎**：与 Tantivy 等不同，fff 只针对单仓库、服务重复检索的热内存响应（实测见 [performance](performance.md)），不落反向索引到磁盘。
 
 ## 3. 技术选择
 
@@ -81,7 +81,7 @@ fff 也提供 MCP server（`fff-mcp`），但那是**进程外**、经 MCP 协�
 
 ### 3.4 为什么不选其它全文索引引擎（Tantivy 等）
 
-面向单仓库、sub-10ms、不落盘反向索引——fff 的定位匹配此场景；Tantivy 适合文档级检索打分（如数千文档），与本场景不同类。
+面向单仓库、热内存响应、不落盘反向索引——fff 的定位匹配此场景；Tantivy 适合文档级检索打分（如数千文档），与本场景不同类。实测口径见 [performance](performance.md)。
 
 ## 4. 实现思路
 
@@ -120,8 +120,7 @@ DSH 工具注册表 `@deepseek-ai/dsh-tools` 按层合并、**nearest scope 的�
 
 fff 常驻索引用内存换性能——要明确这个 trade-off 并在设计上可控：
 
-- 本机实测索引增量：1k 文件 5MB、4k 6MB、14k 8MB（口径见 [performance](performance.md)）。
-- 上游 fff 口径：14k 文件约 26MB resident、100k 文件（如 Chromium）约几百 MB，内容索引约 360 bytes/文件（100k repo 约 36MB）；文件混合比合成树大，本仓未复核。二进制/超大文件/不可 grep 的会被跳过；可改用 memory-map 文件而非匿名 RAM。
+- 本机实测索引增量与上游 fff 口径（14k≈26MB、100k≈几百 MB、约 360 bytes/文件）均见 [performance](performance.md)；二进制/超大文件/不可 grep 的会被跳过，可改用 memory-map 文件而非匿名 RAM。
 - **关键**：在多子代理 / 长会话"大量重复搜索"下，**一份共享常驻索引的内存 < 反复 spawn + 各自攒 stdout 到 Node 堆**——这正是该项目要改善的累积问题。
 
 设计上预留**可控性**（可配置开关/上限）：大仓库、低复用率场景可禁用（回退内置 ripgrep），避免为"搜索一两次"付出索引内存。

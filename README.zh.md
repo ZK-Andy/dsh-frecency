@@ -14,7 +14,7 @@
 
 一个 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 插件：接管内置 `grep` / `glob` 文件搜索——`grep` 跑在**常驻索引 + frecency 排序**上，`glob` 在 ripgrep 可用时与内置发现语义完全对齐（不可用时降级到常驻索引）。
 
-内置工具每次调用都 spawn 一个全新的 ripgrep 进程、从零扫描；长会话与多子代理场景下同样的搜索会重复执行数十次。dsh-frecency 为每个工作目录保留一份常驻索引（Rust [fff](https://github.com/dmtrKovalenko/fff) 引擎，经 `@ff-labs/fff-node`），重复检索毫秒级命中热内存，结果按访问/修改 frecency 排序。
+内置工具每次调用都 spawn 一个全新的 ripgrep 进程、从零扫描；长会话与多子代理场景下同样的搜索会重复执行数十次。dsh-frecency 为每个工作目录保留一份常驻索引（Rust [fff](https://github.com/dmtrKovalenko/fff) 引擎，经 `@ff-labs/fff-node`），复用热内存索引、省去每次 spawn，结果按访问/修改 frecency 排序。
 
 ## 安装
 
@@ -27,7 +27,7 @@ dsh plugin --profile <profile> add dsh-frecency
 ## 你得到什么
 
 - **同名工具**——`grep` / `glob` 工具名与参数不变，模型零提示词改动即切换。
-- **常驻索引（grep）**——重复内容检索复用同一份内存索引，省去每次 spawn ripgrep；14k 文件实测约 2.4–3.1×（[基线](docs/performance.md)）。
+- **常驻索引（grep）**——重复内容检索复用同一份内存索引，省去每次 spawn ripgrep；14k 文件实测 2.5–2.7×（[基线](docs/performance.md)）。
 - **frecency 排序（grep）**——常打开、最近改的文件优先呈现。
 - **内置平价 glob**——glob 跑与内置工具同一条固定 `rg --files` 命令：含 hidden 与 ignored 文件、排除 VCS 元数据、按修改时间排序。ripgrep 不可用时降级到常驻索引。
 - **标注的 grep 输出**——引擎分类的 `isDefinition` 与逐文件 `gitStatus` 随 grep 结果一起返回，模型无需重读即可识别定义行与已改文件。

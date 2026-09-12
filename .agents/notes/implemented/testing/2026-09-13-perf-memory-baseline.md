@@ -13,9 +13,9 @@ Status: implemented
 
 以**机制级两臂**测量作为设计文档 §7 的性能/内存口径，工具与结果同时入仓：
 
-- 工具 `scripts/bench-resident-index.mjs`：`gen` 生成确定性合成树、`run` 同树同 pattern 对比两臂（索引臂用 `src/grep.ts` 的查询参数与分页循环；内置臂 spawn 内置工具相同 argv 的 `rg`），输出重建树耗时、RSS 增量与两臂 p50/p95 的 JSON。路径全走参数，无硬编码。
-- 结果固化为 [docs/performance.md](../../../../docs/performance.md)（口径、复现命令、实测表、解读、未覆盖项），并纳入 `doc-budgets.manifest.json` 预算。
-- 对外声明按实测收敛：README 双语不再承诺"毫秒级"，改述为「省去每次 spawn」并以「14k 文件实测约 3×」背书。
+- 索引臂 = 插件实际调用的引擎 API（查询参数与分页循环对齐 `src/grep.ts`），内置臂 = 每次 spawn 内置工具相同 argv 的 `rg`；两臂都不含插件呈现与 harness 渲染，数字因此是端到端下界。
+- 测量工具入仓 `scripts/bench-resident-index.mjs`；结果单家于 [docs/performance.md](../../../../docs/performance.md)（口径、复现、实测表、解读、未覆盖项），并纳入 `doc-budgets.manifest.json` 预算。
+- 对外声明以实测为准：README 双语改述为「复用常驻索引、省去每次 spawn」，并以 14k 文件实测倍数背书——原「毫秒级」措辞只在千文件量级成立。
 
 ## Alternatives considered
 
@@ -26,6 +26,6 @@ Status: implemented
 
 ## Consequences
 
-- 收益：对外毫秒声明有据并已收敛；基线一条 `gen` + 一条 `run` 即可复现；「索引更快」由数字支撑（重复检索 1.5–3.1×，索引构建一次性 60–110ms）。
+- 收益：对外倍数声明有据；基线按 [performance.md](../../../../docs/performance.md) 的复现命令即可重跑；「索引更快」由数字支撑（重复检索 1.6–3.4×，索引构建一次性 60–110ms）。
 - 代价：多一个入仓脚本（不进 npm 包，也不进 CI——生成 14k 树与 20 次测量不适合每次跑）；数字随机器、树形与命中数变化，文档只承诺口径与量级，不承诺固定值。
 - 已知缺口：宿主 RSS（长会话/多子代理）与端到端工具延迟未测（需真实 harness 会话）；内置臂用的是系统 `rg` 而非 harness 打包二进制（本机 profile 未安装对应 platform 包）。

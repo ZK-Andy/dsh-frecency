@@ -27,7 +27,7 @@ Restart dsh and start a session — `grep` / `glob` keep their names and schemas
 ## What you get
 
 - **Same tool names** — `grep` / `glob` keep their names and schemas; the model switches with zero prompt changes.
-- **Resident index (grep)** — repeated content searches reuse one in-memory index instead of spawning ripgrep per call; measured ~2.4–3.1× faster on a 14k-file tree ([baseline](docs/performance.md)).
+- **Resident index (grep)** — repeated content searches reuse one in-memory index instead of spawning ripgrep per call; measured 2.5–2.7× faster on a 14k-file tree ([baseline](docs/performance.md)).
 - **Frecency ranking (grep)** — frequently opened / recently modified files surface first.
 - **Built-in-parity glob** — glob runs the same fixed `rg --files` invocation as the built-in tool: hidden and ignored files included, VCS metadata excluded, modification-time order. If ripgrep is unavailable, it degrades to the resident index.
 - **Annotated grep output** — engine-classified `isDefinition` and per-file `gitStatus` ride along in grep results, so the model can spot definition lines and modified files without re-reading.
