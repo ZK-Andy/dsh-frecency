@@ -15,4 +15,4 @@
 - `minimumReleaseAge` 供应链策略核验**整份** profile 锁文件：其中任何一个发布未满约 24 小时的包都会让 `dsh plugin add`/`remove` 整体失败（dsh-market 上游 issue #39）。解法 = 市场强制更新同款参数，`dsh plugin add` 透传给 pnpm：`dsh plugin --profile <p> add --config.minimumReleaseAge=0 <pkg>`；或把过新版本写进 profile `pnpm-workspace.yaml` 的 `minimumReleaseAgeExclude`（该文件已有先例条目）。
 - `dsh.bundle` 声明 + `cordis.patch.yml` 必须随包发布，否则 `dsh plugin add` 装不进 bundle 层。
 - 原生依赖发版前按 [cookbook](../../docs/cookbook.md) 的 `allowBuilds` 判定程序核实（`ffi-rs`/`fff-bin-*` 实测纯预编译，非必需）。
-- **Release 正文的标题与 Changelog 链接必须指 tag 而非 HEAD**：`release.yml` 调 `release-notes.sh` 时显式传 `$GITHUB_REF_NAME`，脚本在 tagged 提交上也自动取 tag 名（`resolve_label`，`--self-test` 钉住）；否则正文首行是「Release HEAD」、链接成 `compare/…...HEAD`（v0.1.1/v0.1.2 曾如此，已回填）。
+- **Release 正文的标题与 Changelog 链接必须指 tag 而非 HEAD**：`release.yml` 传 `"" "$GITHUB_REF_NAME"`（空串占位让脚本自动推导 from_ref），脚本对显式 tag 名直接采用、对 HEAD 等非 tag ref 才回落到 `describe --exact-match`；否则正文首行会是「Release HEAD」、链接成 `compare/…...HEAD`（v0.1.1/v0.1.2 曾如此，已回填）。该判定依赖 git，不在离线 `--self-test` 覆盖面内。

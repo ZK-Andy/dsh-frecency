@@ -3,8 +3,10 @@
 # 用法：
 #   bash scripts/release-notes.sh [from_ref] [to_ref]     # 例：bash scripts/release-notes.sh v0.1.0 v0.1.1
 #   bash scripts/release-notes.sh HEAD~10 HEAD            # 也可用范围
+#   bash scripts/release-notes.sh "" "$GITHUB_REF_NAME"   # 只给 to_ref：空串占位让 from_ref 自动推导（release.yml 用此形）
 #   bash scripts/release-notes.sh --self-test             # 离线自检：断言所有 conventional commit 类型都有归属 bucket
 # 省略 from_ref 时自动取 to_ref 前一个 tag；无任何 tag 时落到根提交；省略 to_ref 默认 HEAD。
+# 标题与 Changelog 链接用同一个发布 ref：显式 tag 名优先，否则取该提交上的精确 tag，再退回落 ref 文本。
 # 输出：markdown 正文到 stdout（供 release.yml 的 body 使用）。中文为主 + 英文小节头，与仓库「默认中文」一致。
 set -euo pipefail
 
@@ -46,12 +48,6 @@ render_bucket() {
     fi
     echo "- $show (\`\`\`$short\`\`\`)"
   done <<< "$LOGS"
-}
-
-# 标题标签：tagged 提交取 tag 名，否则回落到 ref 文本。纯函数，便于自测钉规则。
-resolve_label() {
-  local ref="$1" exact_tag="$2"
-  if [[ -n "$exact_tag" ]]; then printf '%s' "$exact_tag"; else printf '%s' "$ref"; fi
 }
 
 self_test() {
@@ -106,19 +102,6 @@ self_test() {
     failures=$((failures+1))
   fi
 
-  # ③ 标题标签：tagged 提交取 tag 名，否则回落 ref 文本。
-  local label
-  label="$(resolve_label HEAD v0.1.2)"
-  if [[ "$label" != "v0.1.2" ]]; then
-    echo "FAIL: resolve_label(HEAD, v0.1.2) = '$label'" >&2
-    failures=$((failures+1))
-  fi
-  label="$(resolve_label 97a6f7e "")"
-  if [[ "$label" != "97a6f7e" ]]; then
-    echo "FAIL: resolve_label(97a6f7e, '') = '$label'" >&2
-    failures=$((failures+1))
-  fi
-
   if [[ "$failures" -eq 0 ]]; then
     echo "== release-notes self-test passed =="
   else
@@ -138,7 +121,7 @@ TO_REF="${2:-HEAD}"
 if [[ -z "$FROM_REF" ]]; then
   # to_ref 前一个可达 tag；仓库尚无 tag 时落到根提交
   FROM_REF="$(git -C "$ROOT" describe --tags --abbrev=0 "$TO_REF^" 2>/dev/null || echo "")"
-  if [[ -z "$FROM_REF" ]]; then FROM_REF="$(git -C "$ROOT" rev-list --max-parents=0 HEAD 2>/dev/null || echo "")"; fi
+  if [[ -z "$FROM_REF" ]]; then FROM_REF="$(git -C "$ROOT" rev-list --max-parents=0 "$TO_REF" 2>/dev/null || echo "")"; fi
 fi
 [[ -n "$FROM_REF" ]] || { echo "error: 无法确定比较起点（from_ref）" >&2; exit 1; }
 
@@ -149,8 +132,13 @@ fi
 
 LOGS="$(git -C "$ROOT" log --no-merges --format='%h|%s' "$FROM_REF..$TO_REF" 2>/dev/null || true)"
 
-# 首行：标题（tag 上带版本号；CI 传 $GITHUB_REF_NAME 时同样落到 tag 名）
-LABEL="$(resolve_label "$TO_REF" "$(git -C "$ROOT" describe --tags --exact-match "$TO_REF" 2>/dev/null || true)")"
+# 标题与 Changelog 链接共用一个发布 ref：显式 tag 名优先（同一提交挂多个 tag 时
+# `describe --exact-match` 会任取其一），否则取该提交上的精确 tag，再退回落 ref 文本。
+if git -C "$ROOT" show-ref --verify --quiet "refs/tags/$TO_REF"; then
+  LABEL="$TO_REF"
+else
+  LABEL="$(git -C "$ROOT" describe --tags --exact-match "$TO_REF" 2>/dev/null || echo "$TO_REF")"
+fi
 echo "# Release $LABEL"
 echo
 echo "DeepSeek Harness 插件：常驻索引 + frecency 文件搜索，同名覆盖内置 grep/glob。安装 \`dsh plugin --profile <profile> add dsh-frecency\`，npm 包 [dsh-frecency](https://www.npmjs.com/package/dsh-frecency)。"
@@ -163,4 +151,4 @@ render_bucket docs  "文档" "Docs"
 render_bucket chore "构建 · CI · 其他" "Build · CI · Other"
 
 echo
-echo "**Full Changelog**: $REPO_URL/compare/$FROM_REF...$TO_REF"
+echo "**Full Changelog**: $REPO_URL/compare/$FROM_REF...$LABEL"
