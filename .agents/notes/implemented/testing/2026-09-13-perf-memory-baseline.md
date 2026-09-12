@@ -16,6 +16,7 @@ Status: implemented
 - 索引臂 = 插件实际调用的引擎 API（查询参数与分页循环对齐 `src/grep.ts`），内置臂 = 每次 spawn 内置工具相同 argv 的 `rg`；两臂都不含插件呈现与 harness 渲染，数字因此是端到端下界。
 - 测量工具入仓 `scripts/bench-resident-index.mjs`；结果单家于 [docs/performance.md](../../../../docs/performance.md)（口径、复现、实测表、解读、未覆盖项），并纳入 `doc-budgets.manifest.json` 预算。
 - 对外声明以实测为准：README 双语改述为「复用常驻索引、省去每次 spawn」，未再带未经取证的毫秒级承诺（数值与口径单家于 [performance.md](../../../../docs/performance.md)）。
+- 端到端工具延迟由插件日志自身产出：grep/glob 的 `execute` 记 start→end 毫秒，写在 serve 行的 `(workdir …; Nms)` 尾注里（harness 渲染仍在计时之外）；每份新建索引另有 `resident index ready for <path> in Nms` 一行，把一次性构建成本从首次调用里分出。任一真实会话的 `~/.dsh/logs/dsh-frecency.log` 即可读出这两类数字。
 
 ## Alternatives considered
 
@@ -28,4 +29,4 @@ Status: implemented
 
 - 收益：对外倍数声明有据；基线按 [performance.md](../../../../docs/performance.md) 的复现路径即可重跑；「索引重复检索更快」由实测支撑。
 - 代价：多一个入仓脚本（不进 npm 包，也不进 CI——生成 14k 树与 20 次测量不适合每次跑）；数字随机器、树形与命中数变化，文档只承诺口径与量级，不承诺固定值。
-- 已知缺口：宿主 RSS（长会话/多子代理）与端到端工具延迟未测（需真实 harness 会话）；内置臂用的是系统 `rg` 而非 harness 打包二进制（本机 profile 未安装对应 platform 包）。
+- 已知缺口：宿主 RSS（长会话/多子代理）需在沙箱外读宿主进程的 `/proc`，且索引开/关要两次会话对照；端到端耗时虽已可从插件日志读出，本机基线文档尚未收录真实会话的数字。

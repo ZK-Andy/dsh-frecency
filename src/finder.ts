@@ -1,4 +1,6 @@
 import { FileFinder, type InitOptions, type Result } from "@ff-labs/fff-node";
+import { performance } from "node:perf_hooks";
+import { elapsedMs, pluginLog } from "./log.ts";
 
 export class FrecencyError extends Error {}
 
@@ -45,6 +47,7 @@ async function acquire(state: SlotState, options: InitOptions): Promise<FileFind
     }
     const create = (async () => {
       if (current) destroyFinder(current.finder);
+      const startedAt = performance.now();
       const finder = unwrap(FileFinder.create(options), "FileFinder.create");
       try {
         // The content index builds in the background; wait so an early grep
@@ -56,6 +59,10 @@ async function acquire(state: SlotState, options: InitOptions): Promise<FileFind
         destroyFinder(finder);
         throw error;
       }
+      // One line per freshly built index: it separates the one-off build cost
+      // from the per-call durations on the serve lines, which would otherwise
+      // carry the build inside the first call of a workspace.
+      pluginLog(`resident index ready for ${options.basePath} in ${elapsedMs(startedAt)}ms`);
       if (released) {
         destroyFinder(finder);
         throw new FrecencyError("dsh-frecency released while acquiring finder");

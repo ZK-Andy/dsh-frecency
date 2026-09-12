@@ -91,6 +91,7 @@ vi.mock("@ff-labs/fff-node", () => ({
 
 const { defineGrepTool } = await import("../src/grep.ts");
 const { defineGlobTool } = await import("../src/glob.ts");
+const { setLogger } = await import("../src/log.ts");
 
 const caps = {
   grepMaxMatches: 250,
@@ -316,5 +317,34 @@ describe("glob tool", () => {
     };
     expect(value.paths).toEqual(["/elsewhere/a.txt"]);
     expect(instances[0]!.basePath).toBe("/elsewhere");
+  });
+});
+
+describe("serve log timing", () => {
+  it("stamps the index-ready line and the grep serve line with durations", async () => {
+    const tool = defineGrepTool(caps);
+    const lines: string[] = [];
+    setLogger({ info: (message) => lines.push(String(message)) });
+    try {
+      await tool.execute!({ pattern: "x" }, execFor("/ws"));
+    } finally {
+      setLogger(undefined);
+    }
+    expect(lines).toHaveLength(2);
+    expect(lines[0]).toMatch(/^dsh-frecency: resident index ready for \/ws in \d+ms$/);
+    expect(lines[1]).toMatch(/^dsh-frecency: grep "x" served by the resident index .*\(workdir \/ws; \d+ms\)$/);
+  });
+
+  it("stamps the glob serve line with the whole-call duration", async () => {
+    const tool = defineGlobTool(caps);
+    rgDefaults.result = { paths: ["a.md"], complete: true };
+    const lines: string[] = [];
+    setLogger({ info: (message) => lines.push(String(message)) });
+    try {
+      await tool.execute!({ pattern: "*.md" }, execFor("/ws"));
+    } finally {
+      setLogger(undefined);
+    }
+    expect(lines.some((line) => /served by rg parity .*\(workdir \/ws; \d+ms\)$/.test(line))).toBe(true);
   });
 });

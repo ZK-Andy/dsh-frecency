@@ -2,7 +2,7 @@ import { defineTool, type ToolDefinition } from "@deepseek-ai/dsh-tools";
 import { parseGlobArgs, presentGlobCall, presentGlobResult, toWorkdirRelative } from "@deepseek-ai/dsh-tool-fs-search";
 import { getEphemeralFinder, getWorkspaceFinder, unwrap } from "./finder.ts";
 import type { FileFinder } from "@ff-labs/fff-node";
-import { pluginLog } from "./log.ts";
+import { elapsedMs, pluginLog } from "./log.ts";
 import { filterByPrefix } from "./mapping.ts";
 import { buildGlobArgv, runRgFiles } from "./rg.ts";
 import { formatGlobPage, globPage, globSearchMeta, type RetentionCaps } from "./presentation.ts";
@@ -60,6 +60,7 @@ export function defineGlobTool(caps: RetentionCaps & { timeoutMs: number }): Too
       presentationMeta: (_args, value) => globSearchMeta(globPageFor(value, caps), caps),
     },
     async execute(args, exec) {
+      const startedAt = performance.now();
       const input = parseGlobArgs(args);
       const workdir = exec.agent?.session?.header?.cwd ?? process.cwd();
       const base = resolveScopeBase(input.path, workdir);
@@ -79,7 +80,10 @@ export function defineGlobTool(caps: RetentionCaps & { timeoutMs: number }): Too
         );
         relativePaths = rgResult.paths;
         exhausted = rgResult.complete;
-        pluginLog(`glob "${input.pattern}" served by rg parity — ${relativePaths.length} paths (workdir ${workdir})`);
+        pluginLog(
+          `glob "${input.pattern}" served by rg parity — ${relativePaths.length} paths ` +
+            `(workdir ${workdir}; ${elapsedMs(startedAt)}ms)`,
+        );
       } catch (error) {
         // Caller cancellation / tool timeout: do NOT degrade and run an extra
         // resident-index scan — surface the abort, like the built-in tool's
@@ -96,7 +100,8 @@ export function defineGlobTool(caps: RetentionCaps & { timeoutMs: number }): Too
         relativePaths = served.relativePaths;
         exhausted = served.exhausted;
         pluginLog(
-          `glob "${input.pattern}" served by the resident index — ${relativePaths.length} paths (workdir ${workdir})`,
+          `glob "${input.pattern}" served by the resident index — ${relativePaths.length} paths ` +
+            `(workdir ${workdir}; ${elapsedMs(startedAt)}ms)`,
         );
       }
       let paths = relativePaths.map((p) => base.toDisplay(p));
