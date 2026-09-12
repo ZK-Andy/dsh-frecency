@@ -11,7 +11,7 @@ dsh-frecency 是一个 DeepSeek Harness (dsh) 插件项目，从第一天起就�
 
 ## Decision
 
-从 `/mnt/work/devops-template`（提炼自 `deepseek-ai/deepseek-harness`，MIT）引入 AI 协作体系，按 `docs/ADAPTATION.md` 的 DSH 机制放置：
+从 `/mnt/work/devops-template`（提炼自 `deepseek-ai/deepseek-harness`，MIT）引入 AI 协作体系，按该模板仓的 `docs/ADAPTATION.md` 的 DSH 机制放置：
 
 - 根 `AGENTS.md`：DSH 自动加载的入口规则（常驻命令 + 硬规则，每条 1-3 行 + 链接）。
 - `.agents/AGENTS.md`：协作层专属规则 + 技能出处声明（MIT）。

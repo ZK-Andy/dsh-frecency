@@ -77,4 +77,4 @@
 ## 5. 其他 agent 规则文件
 
 - `CLAUDE.md` → symlink 到 `AGENTS.md`（Claude Code 兼容，单一事实源）
-- `.claude/skills/`、`.agents/skills/` 等技能放置见 `docs/ADAPTATION.md` §1
+- `.claude/skills/`、`.agents/skills/` 等技能放置见 devops-template 模板仓的 `docs/ADAPTATION.md` §1
