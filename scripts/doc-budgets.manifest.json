@@ -4,6 +4,7 @@
     { "path": "docs/design.md", "max_words": 1800 },
     { "path": "docs/architecture.md", "max_words": 1200 },
     { "path": "docs/testing.md", "max_words": 800 },
+    { "path": "docs/performance.md", "max_words": 600 },
     { "path": "docs/cookbook.md", "max_words": 800 }
   ]
 }

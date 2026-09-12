@@ -10,7 +10,7 @@
 
 ## 性能与内存基线
 
-大仓库重复检索延迟（内置 spawn vs 常驻索引）、长会话/多子代理宿主 RSS、单份索引常驻内存——按 `docs/design.md` §7 的对比口径执行，结果记入当次会话 journal，达标后固化为本目录下的基线文档。
+复现命令与实测见 [performance.md](performance.md)，工具 = `scripts/bench-resident-index.mjs`（`gen` 合成树 + `run` 两臂对比）。宿主 RSS（长会话/多子代理）与端到端工具延迟需真实 harness 会话，尚未测；新测量结果记入当次会话 journal 并同步该基线文档。
 
 ## 命令
 

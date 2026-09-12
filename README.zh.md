@@ -27,7 +27,7 @@ dsh plugin --profile <profile> add dsh-frecency
 ## 你得到什么
 
 - **同名工具**——`grep` / `glob` 工具名与参数不变，模型零提示词改动即切换。
-- **常驻索引（grep）**——重复内容检索复用同一份内存索引，单次调用毫秒级。
+- **常驻索引（grep）**——重复内容检索复用同一份内存索引，省去每次 spawn ripgrep；14k 文件实测约 2.4–3.1×（[基线](docs/performance.md)）。
 - **frecency 排序（grep）**——常打开、最近改的文件优先呈现。
 - **内置平价 glob**——glob 跑与内置工具同一条固定 `rg --files` 命令：含 hidden 与 ignored 文件、排除 VCS 元数据、按修改时间排序。ripgrep 不可用时降级到常驻索引。
 - **标注的 grep 输出**——引擎分类的 `isDefinition` 与逐文件 `gitStatus` 随 grep 结果一起返回，模型无需重读即可识别定义行与已改文件。

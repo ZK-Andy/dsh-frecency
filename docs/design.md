@@ -45,7 +45,7 @@ DeepSeek Harness (dsh) 的 `grep` / `glob` 工具由 `@deepseek-ai/dsh-tool-fs-s
 | 维度 | 内置行为 | dsh-frecency |
 |---|---|---|
 | 重复检索 | 每次 spawn 新进程、从零扫 | 命中常驻索引，热内存 |
-| 单次延迟 | sub-ms 到数秒（取决于仓库大小 / spawn 开销） | 常驻后 sub-10ms |
+| 单次延迟 | sub-ms 到数秒（取决于仓库大小 / spawn 开销） | 常驻后 4–18ms（1k–14k 合成树实测，见 [performance](performance.md)） |
 | 结果排序 | ripgrep 按路径/修改顺序 | frecency（访问+修改频率）排序 |
 | 定义识别 | 无 | 定义行标注（`isDefinition`，不重排） |
 | git 状态 | 无内建标注 | modified/untracked/staged 标注 |
@@ -55,7 +55,7 @@ DeepSeek Harness (dsh) 的 `grep` / `glob` 工具由 `@deepseek-ai/dsh-tool-fs-s
 
 - **不替代 ripgrep 的"终端一次性搜索"**：单次 grep 且立刻退出，`rg` 仍是正确工具；dsh-frecency 的价值在**长会话内重复检索**。
 - **不改变 dsh 的其它搜索/读取工具**：`read`/`write`/`edit` 保持内置；只增强 `grep`/`glob`。
-- **不是全文搜索引擎**：与 Tantivy 等不同，fff 只针对单仓库、优化 sub-10ms，不落反向索引到磁盘。
+- **不是全文搜索引擎**：与 Tantivy 等不同，fff 只针对单仓库、优化重复检索的毫秒级响应（实测见 [performance](performance.md)），不落反向索引到磁盘。
 
 ## 3. 技术选择
 
@@ -120,8 +120,8 @@ DSH 工具注册表 `@deepseek-ai/dsh-tools` 按层合并、**nearest scope 的�
 
 fff 常驻索引用内存换性能——要明确这个 trade-off 并在设计上可控：
 
-- 14k 文件仓库约 26MB resident；100k 文件（如 Chromium）约几百 MB。
-- 内容索引约 360 bytes/文件（100k repo 约 36MB），且二进制/超大文件/不可 grep 的会被跳过；可改用 memory-map 文件而非匿名 RAM。
+- 本机实测索引增量：1k 文件 5MB、4k 6MB、14k 8MB（口径见 [performance](performance.md)）。
+- 上游 fff 口径：14k 文件约 26MB resident、100k 文件（如 Chromium）约几百 MB，内容索引约 360 bytes/文件（100k repo 约 36MB）；文件混合比合成树大，本仓未复核。二进制/超大文件/不可 grep 的会被跳过；可改用 memory-map 文件而非匿名 RAM。
 - **关键**：在多子代理 / 长会话"大量重复搜索"下，**一份共享常驻索引的内存 < 反复 spawn + 各自攒 stdout 到 Node 堆**——这正是该项目要改善的累积问题。
 
 设计上预留**可控性**（可配置开关/上限）：大仓库、低复用率场景可禁用（回退内置 ripgrep），避免为"搜索一两次"付出索引内存。
@@ -129,14 +129,14 @@ fff 常驻索引用内存换性能——要明确这个 trade-off 并在设计�
 ## 6. 风险与开放问题
 
 1. **presentation 一致性**：遮蔽 grep 后要自带 `SearchResultView` 才与内置长得一样；否则显示成通用卡片（可解决，非阻断）。
-2. **是否真降低多子代理内存**：索引分摊了"重复扫描"，但**不消除**子代理各自上下文/工具结果在 Node 堆的累积。设计文档不承诺消除该部分，只承诺降低重复检索成本。
+2. **是否真降低多子代理内存**：索引分摊了"重复扫描"，但**不消除**子代理各自上下文/工具结果在 Node 堆的累积。设计文档不承诺消除该部分，只承诺降低重复检索成本；宿主 RSS 需真实多子代理会话对比，本机未测（口径与缺口见 [performance](performance.md)）。
 3. **frecency 边界**：frecency 排序对"用户常打开的文件"最有效；冷文件/首次搜索的提升有限。
 
 ## 7. 验证计划
 
 - **功能**：装载插件后，`grep` 走 fff 索引（同 cwd 多次检索命中同索引；cwd 变化重建），`glob` 与内置工具同结果（含 ignored/hidden、VCS 排除、mtime 序）。
-- **性能**：大仓库重复检索延迟对比（内置 spawn vs 常驻索引）。
-- **内存**：长会话/多子代理场景下宿主 RSS 对比；单份索引内存实测。
+- **性能**：大仓库重复检索延迟对比（内置 spawn vs 常驻索引）——机制级口径与实测见 [performance](performance.md)；端到端工具延迟待真实 harness 会话打点。
+- **内存**：单份索引常驻内存实测见 [performance](performance.md)；长会话/多子代理场景的宿主 RSS 待真实会话对比。
 - **降级**：native 二进制缺失时回退内置 ripgrep，行为不变。
 - **门禁**：`verify-adr-format` / `verify-md-links` / `verify-doc-budgets` 全绿；行为级变更配回归/快照。
 
