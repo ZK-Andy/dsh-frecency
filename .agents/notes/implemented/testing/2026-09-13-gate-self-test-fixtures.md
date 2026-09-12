@@ -13,10 +13,10 @@ Status: implemented
 
 `verify-md-links.py` 内嵌 `--self-test`：离线合成树、不读本仓内容、逐用例断言错误列表。
 
-- 扫描逻辑提为 `_scan(root, include_skills) -> (checked, errors)`，与 `verify-handoff-structure.py` 的 `_scan` 同形，夹具直接调它而不经 argparse 或 stdout 抓取。
-- 判据 = 每个用例把实际错误去掉 `<临时路径>: ` 前缀后与期望逐项相等；任一不符打印 `✗` 并以退出码 1 收场，全部相符打印 `== verify-md-links self-test passed ==`。
-- 10 个用例覆盖两类判据：链接解析（解析成功 / 缺失目标 / 死锚点 / 标题 slug / 显式 `<a id>` / 无链接）与排除面（`skills/` 默认排除与 `--include-skills` 解除 / 三个排除片段在任意层级 / 被排除目录的悬空链接保持沉默而本仓链接照报）。
-- 入口为 `python3 scripts/verify-md-links.py --self-test`，在 argparse 之前分流，因此无参数调用与既有调用点（CI、`.githooks/pre-commit`）行为不变。
+- 扫描逻辑提为 `_scan(root, include_skills) -> (checked, errors)`：错误以 `(markdown 路径, 消息)` 二元组返回，夹具直接断言消息而不解析格式化后的字符串；排除判据按扫描根**之下**的路径片段匹配，root 自身的名称不参与判定。
+- 判据 = 每个用例同时断言消息列表与 `checked` 计数（`Checked N` 只计解析成功的目标，失败项不计）；任一不符打印 `✗` 并以退出码 1 收场，全部相符打印 `== verify-md-links self-test passed ==`。
+- 14 个用例覆盖两个判据面：链接解析（含外部与 `://` 跳过、根锚定 `/` 命中与未命中、空 fragment、散文中的文件名不校验）与排除面（`skills/` 默认排除与 `--include-skills` 解除、三个排除片段在任意层级、混合树只报本仓链接）。逐用例语义由脚本内的 `desc` 字符串承载，本笔记不复述。
+- 入口为 `python3 scripts/verify-md-links.py --self-test`，须是唯一参数（多余参数落回 argparse 报错）；分流在 argparse 之前，因此无参数调用与既有调用点（CI、`.githooks/pre-commit`）行为不变。
 
 ## Alternatives considered
 
@@ -28,5 +28,5 @@ Status: implemented
 ## Consequences
 
 - 收益：排除集合与锚点判据有可复跑的红/绿证据；改判据时先跑 `--self-test` 即暴露回退，不必依赖临建树手工验证。
-- 代价：脚本体量增加约 60 行；夹具与实现同文件，改实现需同步改期望（夹具失败即提醒）。
+- 代价：脚本体量净增约 80 行；夹具与实现同文件，改实现需同步改期望（夹具失败即提醒）。
 - 已知缺口：`.agents/notes/README.md` 记的 `verify-adr-format.py --self-test` 与"文件名/路径命名规则"机器校验在本仓 .py 版均不存在（开关与校验都缺席），本次未补。

@@ -14,7 +14,7 @@ Status: implemented
 工具缓存性质的嵌套克隆仓既不在本仓内容面，也不进本仓门禁：
 
 - `.gitignore` 的「工具缓存」段加入 `/.noogenesis/`，与 `/.cache/`、`/.codegraph/`、`.zcode/` 同段并列。
-- `verify-md-links.py` 把排除集合提为模块常量 `EXCLUDED_PARTS`（`node_modules`、`.pnpm`、`.noogenesis`），按路径片段在任意层级匹配；扫描范围仍是「工作树内全部 Markdown 减去排除项」。该集合不可开关，`--include-skills` 只解除 `skills` 的排除。
+- `verify-md-links.py` 把排除集合提为模块常量 `EXCLUDED_PARTS`（`node_modules`、`.pnpm`、`.noogenesis`），按扫描根**之下**的路径片段在任意层级匹配（root 自身的名称不参与判定）；扫描范围仍是「工作树内全部 Markdown 减去排除项」。该集合不可开关，`--include-skills` 只解除 `skills` 的排除。
 - 脚本文档头写明排除集合及其可开关性，与 `.gitignore` 的工具缓存段互相印证；指向不发行文件的裸引用改为限定来源（见 Problem 的附带清理）。
 
 ## Alternatives considered

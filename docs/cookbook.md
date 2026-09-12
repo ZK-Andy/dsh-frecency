@@ -36,7 +36,7 @@
 
 ## 门禁与仓库卫生（[脚本]）
 
-- **工具缓存克隆同时污染门禁扫描面与索引**：`verify-md-links.py` 用 `rglob("*.md")` 遍历工作树，嵌套克隆（自带 `.git`，如 `.noogenesis/genes-cache/`）内的悬空链接会被算成本仓 FAIL；同一目录未忽略时 `git add .` 只在索引留下一条 gitlink（mode 160000）而非缓存内容，形成伪 submodule 条目——理由与备选见 [ADR](../.agents/notes/implemented/process/2026-09-13-exclude-vendored-clone-caches-from-md-links.md)。处置 = 两处并改（`.gitignore` 工具缓存段忽略整树 + 门禁 `EXCLUDED_PARTS` 加同名路径片段）。复验 fixture：临建树内 `.noogenesis/` 与 `docs/` 各放一条悬空链接，`python3 scripts/verify-md-links.py <tmp>` 应只报 `docs/` 那条（`Checked N` 只计解析成功的目标，失败项不计）。
+- **工具缓存克隆同时污染门禁扫描面与索引**：`verify-md-links.py` 用 `rglob("*.md")` 遍历工作树，嵌套克隆（自带 `.git`，如 `.noogenesis/genes-cache/`）内的悬空链接会被算成本仓 FAIL；同一目录未忽略时 `git add .` 只在索引留下一条 gitlink（mode 160000）而非缓存内容，形成伪 submodule 条目——理由与备选见 [ADR](../.agents/notes/implemented/process/2026-09-13-exclude-vendored-clone-caches-from-md-links.md)。处置 = 两处并改（`.gitignore` 工具缓存段忽略整树 + 门禁 `EXCLUDED_PARTS` 加同名路径片段）。复验 = `python3 scripts/verify-md-links.py --self-test`（夹具含混合树用例：被排除目录的悬空链接保持沉默，本仓链接照报；`Checked N` 只计解析成功的目标）。
 
 ## 流程先例（dotnet 项目）
 

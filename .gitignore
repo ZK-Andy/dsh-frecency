@@ -14,6 +14,10 @@ dist/
 coverage/
 *.log
 
+# Python（scripts/ 门禁）
+__pycache__/
+*.pyc
+
 # 工具缓存
 /.cache/
 /.codegraph/

@@ -6,8 +6,11 @@ Checks, for every .md file under the given root (default: current directory):
   - `](relative/path.md#slug)` -> target exists AND slug must match a heading
     slug (GitHub-style: lowercase, spaces->hyphens, strip punctuation) or an
     explicit <a id="slug"> anchor in that file
-  - `](https://…)` / `](mailto:…)` / `](<…>)` -> skipped (external)
-  - bare filenames or absolute paths are NOT validated here
+  - `](https://…)` / `](mailto:…)` / `](<…>)` -> skipped (external), as is any
+    target containing `://`
+  - targets starting with `/` resolve against the scan root, other targets
+    against the linking file's directory
+  - only `](…)` link targets are validated; filenames mentioned in prose are not
 
 Vendored and generated trees never enter the scan: `node_modules/`, `.pnpm/`,
 and the `.noogenesis/` gene-bank cache (a nested clone of the Noogenesis
@@ -57,14 +60,15 @@ def heading_slugs(path: Path) -> set[str]:
     return slugs
 
 
-def _scan(root: Path, include_skills: bool) -> tuple[int, list[str]]:
-    """Return (checked targets, errors) for the Markdown tree under root."""
-    errors: list[str] = []
+def _scan(root: Path, include_skills: bool) -> tuple[int, list[tuple[str, str]]]:
+    """Return (checked targets, [(markdown path, message)]) under root."""
+    errors: list[tuple[str, str]] = []
     checked = 0
     for md in sorted(root.rglob("*.md")):
-        if not include_skills and "skills" in md.parts:
+        parts = md.relative_to(root).parts
+        if not include_skills and "skills" in parts:
             continue
-        if EXCLUDED_PARTS.intersection(md.parts):
+        if EXCLUDED_PARTS.intersection(parts):
             continue
         text = md.read_text(encoding="utf-8")
         for target in LINK_RE.findall(text):
@@ -78,13 +82,13 @@ def _scan(root: Path, include_skills: bool) -> tuple[int, list[str]]:
             else:
                 resolved = (md.parent / target.split("#")[0]).resolve()
             if not resolved.is_file():
-                errors.append(f"{md}: missing target '{target}'")
+                errors.append((str(md), f"missing target '{target}'"))
                 continue
             checked += 1
             if "#" in target:
                 frag = target.split("#", 1)[1]
                 if frag and frag not in heading_slugs(resolved):
-                    errors.append(f"{md}: dead anchor '#{frag}' in '{target}'")
+                    errors.append((str(md), f"dead anchor '#{frag}' in '{target}'"))
     return checked, errors
 
 
@@ -92,45 +96,58 @@ def _self_test() -> int:
     """Offline fixture self-check over synthetic Markdown trees."""
     import tempfile
 
-    # (files, include_skills, expected errors after the "<path>: " prefix, desc)
+    # (files, include_skills, expected messages, expected checked count, desc)
     cases = [
-        ({"docs/a.md": "[t](b.md)\n", "docs/b.md": "# B\n"}, False, [],
+        ({"docs/a.md": "[t](b.md)\n", "docs/b.md": "# B\n"}, False, [], 1,
          "resolving relative link -> pass"),
         ({"docs/a.md": "[t](missing.md)\n"}, False,
-         ["missing target 'missing.md'"], "missing target -> fail"),
+         ["missing target 'missing.md'"], 0, "missing target -> fail"),
         ({"docs/a.md": "[t](b.md#nope)\n", "docs/b.md": "# B\n"}, False,
-         ["dead anchor '#nope' in 'b.md#nope'"], "dead anchor -> fail"),
-        ({"docs/a.md": "[t](b.md#b)\n", "docs/b.md": "# B\n"}, False, [],
+         ["dead anchor '#nope' in 'b.md#nope'"], 1, "dead anchor -> fail"),
+        ({"docs/a.md": "[t](b.md#b)\n", "docs/b.md": "# B\n"}, False, [], 1,
          "heading slug anchor -> pass"),
         ({"docs/a.md": "[t](b.md#pinned)\n", "docs/b.md": '<a id="pinned"></a>\n'},
-         False, [], "explicit <a id> anchor -> pass"),
-        ({"docs/a.md": "no links here\n"}, False, [], "no links -> pass"),
-        ({"skills/x.md": "[t](missing.md)\n"}, False, [],
+         False, [], 1, "explicit <a id> anchor -> pass"),
+        ({"docs/a.md": "[t](b.md#)\n", "docs/b.md": "# B\n"}, False, [], 1,
+         "empty fragment -> pass"),
+        ({"docs/a.md": "[e](https://x.test/a)\n[m](mailto:a@b.test)\n"
+                       "[g](<other.md>)\n[s](ftp://h/x.md)\n"}, False, [], 0,
+         "external, mailto, angle-bracket and :// targets skipped -> pass"),
+        ({"docs/a.md": "see missing.md for details\n"}, False, [], 0,
+         "filename in prose is not a link target -> pass"),
+        ({"sub/a.md": "[r](/docs/gone.md)\n"}, False,
+         ["missing target '/docs/gone.md'"], 0,
+         "root-anchored target missing -> fail"),
+        ({"sub/a.md": "[r](/docs/b.md)\n", "docs/b.md": "# B\n"}, False, [], 1,
+         "root-anchored target resolving -> pass"),
+        ({"skills/x.md": "[t](missing.md)\n"}, False, [], 0,
          "skills/ excluded by default -> pass"),
         ({"skills/x.md": "[t](missing.md)\n"}, True,
-         ["missing target 'missing.md'"], "--include-skills checks skills/ -> fail"),
+         ["missing target 'missing.md'"], 0,
+         "--include-skills checks skills/ -> fail"),
         ({"node_modules/x.md": "[t](missing.md)\n",
           ".pnpm/y.md": "[t](missing.md)\n",
-          ".noogenesis/genes-cache/z.md": "[t](missing.md)\n"}, False, [],
+          ".noogenesis/genes-cache/z.md": "[t](missing.md)\n"}, False, [], 0,
          "excluded parts at any depth -> pass"),
         ({"docs/a.md": "[t](gone.md)\n",
           ".noogenesis/genes-cache/z.md": "[t](draft.md)\n"}, False,
-         ["missing target 'gone.md'"],
+         ["missing target 'gone.md'"], 0,
          "excluded dangling link stays silent while a repo-owned link fails"),
     ]
 
     failed = 0
     with tempfile.TemporaryDirectory() as td:
-        for i, (files, include_skills, expected, desc) in enumerate(cases):
+        for i, (files, include_skills, expected, expected_checked, desc) in enumerate(cases):
             tree = Path(td) / f"tree-{i}"
             for rel, text in files.items():
                 p = tree / rel
                 p.parent.mkdir(parents=True, exist_ok=True)
                 p.write_text(text, encoding="utf-8")
-            _, errors = _scan(tree, include_skills)
-            actual = [e.split(": ", 1)[1] for e in errors]
-            if actual != expected:
-                print(f"  ✗ {desc}: expected {expected}, got {actual}")
+            checked, errors = _scan(tree, include_skills)
+            actual = [msg for _, msg in errors]
+            if actual != expected or checked != expected_checked:
+                print(f"  ✗ {desc}: expected errors={expected} checked={expected_checked}, "
+                      f"got errors={actual} checked={checked}")
                 failed = 1
             else:
                 print(f"  ok: {desc}")
@@ -142,7 +159,7 @@ def _self_test() -> int:
 
 
 def main() -> int:
-    if len(sys.argv) > 1 and sys.argv[1] == "--self-test":
+    if sys.argv[1:] == ["--self-test"]:
         return _self_test()
 
     ap = argparse.ArgumentParser()
@@ -154,8 +171,8 @@ def main() -> int:
 
     print(f"Checked {checked} link targets")
     if errors:
-        for e in errors:
-            print(f"FAIL: {e}")
+        for md, msg in errors:
+            print(f"FAIL: {md}: {msg}")
         return 1
     print("OK")
     return 0

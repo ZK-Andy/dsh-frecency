@@ -22,6 +22,7 @@ pnpm check        # typecheck + build + test（本地与 CI 同口径）
 
 ```sh
 python3 scripts/verify-adr-format.py
+python3 scripts/verify-handoff-structure.py
 python3 scripts/verify-doc-budgets.py --manifest scripts/doc-budgets.manifest.json
 python3 scripts/verify-md-links.py
 ```
