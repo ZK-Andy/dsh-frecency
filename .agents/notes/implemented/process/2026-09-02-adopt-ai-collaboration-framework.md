@@ -18,7 +18,7 @@ dsh-frecency 是一个 DeepSeek Harness (dsh) 插件项目，从第一天起就�
 - `.agents/skills/`：11 个技能原版（来自 devops-template，逐字节一致）。
 - `.agents/notes/`：ADR 系统（`{proposed,implemented,rejected,archived}/{feature,bug-fix,simplification,architecture,process,testing}/`）。
 - `.agents/workflows/`：流程卡（session-modes / feature-flow / session-open / session-close / release-flow）。
-- `scripts/`：门禁（verify-adr-format / verify-doc-budgets / verify-md-links）+ change-scope.sh。
+- `scripts/`：门禁（verify-adr-format / verify-handoff-structure / verify-doc-budgets / verify-md-links）+ change-scope.sh。
 - `templates/`：adr-proposed / adr-implemented / agnents-hierarchy。
 
 **关键约定**：

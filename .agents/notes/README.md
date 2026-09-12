@@ -1,6 +1,6 @@
 # Agent Notes 规则（ADR 系统）
 
-本目录是项目的决策记录系统（Agent Notes / ADR）。规则如下，`scripts/verify-adr-format.py` 机器强制。
+本目录是项目的决策记录系统（Agent Notes / ADR）。规则如下；头/骨架/状态-目录一致性由 `scripts/verify-adr-format.py` 机器强制，命名与日期格式靠评审（本仓脚本尚未校验）。
 
 ## 何时写
 
@@ -13,7 +13,7 @@
 - lifecycle（状态即目录，随状态迁移）：`proposed/` → `implemented/` → `archived/`；另有 `rejected/`。
 - class（封闭集合）：`feature` / `bug-fix` / `simplification` / `architecture`（交付源码）/ `process`（工具流程）/ `testing`。刻意无 `refactor`（与 `simplification` 重叠：判别词"可观察行为是否变化"）。
 - 日期 = 首次提出日，迁移改名不改日期。
-- 文件名 = `yyyy-mm-dd-<kebab-slug>.md`：slug 小写连字符（`[a-z0-9]+(-[a-z0-9]+)*`），禁大写/下划线/中文；日期为合法日历日且不晚于今日。此命名格式由 `verify-adr-format.py` 机器强制（详见「门禁」），违约即 FAIL。
+- 文件名 = `yyyy-mm-dd-<kebab-slug>.md`：slug 小写连字符（`[a-z0-9]+(-[a-z0-9]+)*`），禁大写/下划线/中文；日期为合法日历日且不晚于今日。**本仓的 `verify-adr-format.py` 尚未校验命名与日期格式**（见「门禁」），该条靠评审强制。
 
 ## 格式
 
@@ -32,8 +32,9 @@
 ## 门禁
 
 ```sh
-python3 scripts/verify-adr-format.py               # 在仓库根运行，校验头/骨架/状态-目录一致性 + 文件名/路径命名规则
-python3 scripts/verify-adr-format.py --self-test   # 离线夹具自测（违约样例应 FAIL，合规样例应 PASS）
+python3 scripts/verify-adr-format.py   # 校验头/骨架/状态-目录一致性（命名/日期格式尚未校验）
 ```
+
+夹具自测（`--self-test`）在本仓目前只覆盖 `verify-handoff-structure.py` 与 `verify-md-links.py`（见根 `AGENTS.md` 质量门）。
 
 当前正文中文单语（双语镜像 `.zh.md` + `.i18n.yaml` 配对暂不启用，README/docs 层启用时恢复）。

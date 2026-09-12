@@ -26,5 +26,6 @@ Status: implemented
 ## Consequences
 
 - 收益：门禁结论恒等于本仓内容面；`.noogenesis/` 不会在索引里留下伪 submodule 条目；本机与 CI 跑同一脚本得到同一口径。
+- 判据回归由夹具自测承担：排除集合、`--include-skills` 与锚点分支见 [gate-self-test-fixtures](../testing/2026-09-13-gate-self-test-fixtures.md)。
 - 代价：`scripts/verify-md-links.py` 与 `templates/agnents-hierarchy.md` 相对 devops-template 源本产生漂移（排除集合多一个成员、裸引用改为限定来源），同步模板时需保留这两处改动。
 - 已知缺口：`.noogenesis/` 内的 Markdown 从此不在本仓任何门禁视野内——即便带 `--include-skills`，该缓存内的技能副本也不进扫描——其有效性由 Noogenesis 仓自己的门禁负责。重新纳入的触发与备选 2 相同：出现第二个嵌套克隆，或该缓存转入本仓跟踪面时重审。
