@@ -21,7 +21,7 @@ DeepSeek Harness (dsh) 插件：常驻索引 + frecency 排序的文件搜索，
 ## 质量门
 
 ```sh
-python3 scripts/verify-adr-format.py       # ADR 头/骨架/状态-目录一致性
+python3 scripts/verify-adr-format.py       # ADR 路径/命名/日期 + 头/骨架/状态-目录（--self-test 跑夹具）
 python3 scripts/verify-handoff-structure.py # HANDOFF 家庭结构（--self-test 跑夹具）
 python3 scripts/verify-doc-budgets.py --manifest scripts/doc-budgets.manifest.json
 python3 scripts/verify-md-links.py         # 相对链接/锚点（--self-test 跑夹具）

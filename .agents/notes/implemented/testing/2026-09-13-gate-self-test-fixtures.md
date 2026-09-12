@@ -7,16 +7,18 @@ Status: implemented
 
 ## Problem
 
-门禁脚本的判据缺少可复跑的回归证据：`verify-md-links.py` 的排除集合与锚点判据只能靠临时搭树手工验证，同族的 `verify-handoff-structure.py` 已有 `--self-test`（11 个合成树用例），链接门禁缺席；`.agents/notes/README.md` 记录的门禁能力里，`verify-adr-format.py` 同样没有夹具自测，说明「门禁自带夹具」在本仓只是局部惯例而非成文做法。
+门禁脚本的判据缺少可复跑的回归证据：判据一改，只能临时搭树手工验证。`verify-handoff-structure.py` 先有 `--self-test`（11 个合成树用例），`verify-md-links.py` 与 `verify-adr-format.py` 都没有夹具，「门禁自带夹具」在本仓只是局部惯例而非成文做法。
 
 ## Decision
 
-`verify-md-links.py` 内嵌 `--self-test`：离线合成树、不读本仓内容、逐用例断言错误列表。
+门禁脚本内嵌 `--self-test`：离线合成树、不读本仓内容、逐用例断言 `checked` 与错误列表。
 
-- 扫描逻辑提为 `_scan(root, include_skills) -> (checked, errors)`：错误以 `(markdown 路径, 消息)` 二元组返回，夹具直接断言消息而不解析格式化后的字符串；判据本身（排除集合、可开关性）的单一事实源是 [exclude-vendored-clone-caches-from-md-links](../process/2026-09-13-exclude-vendored-clone-caches-from-md-links.md)。
-- 判据 = 每个用例同时断言消息列表与 `checked` 计数（`Checked N` 只计解析成功的目标，失败项不计）；任一不符打印 `✗` 并以退出码 1 收场，全部相符打印 `== verify-md-links self-test passed ==`。
-- 14 个用例覆盖两个判据面：链接解析（含外部与 `://` 跳过、根锚定 `/` 命中与未命中、空 fragment、散文中的文件名不校验）与排除面（`skills/` 默认排除与 `--include-skills` 解除、三个排除片段在任意层级、混合树只报本仓链接）。逐用例语义由脚本内的 `desc` 字符串承载，本笔记不复述。
-- 入口为 `python3 scripts/verify-md-links.py --self-test`，须是唯一参数（多余参数落回 argparse 报错）；分流在 argparse 之前，因此无参数调用与既有调用点（CI、`.githooks/pre-commit`）行为不变。
+- 各门禁的扫描逻辑提为 `_scan(...) -> (checked, errors)`，夹具直接调它而不经 argparse 或 stdout 抓取；`verify-adr-format.py` 与 `verify-md-links.py` 同形，`verify-md-links.py` 的错误以 `(markdown 路径, 消息)` 二元组返回，夹具不解析格式化后的字符串。
+- 判据 = 每个用例同时断言消息列表与 `checked` 计数（缺失即空转也能被抓住）；任一不符打印 `✗` 并以退出码 1 收场，全部相符打印 `== <gate> self-test passed ==`。
+- `verify-md-links.py`：14 个用例覆盖链接解析（外部与 `://` 跳过、根锚定 `/` 命中与未命中、空 fragment、散文文件名不校验）与排除面（`skills/` 默认排除与 `--include-skills` 解除、三个排除片段任意层级、混合树只报本仓链接）；判据本身单家于 [exclude-vendored-clone-caches-from-md-links](../process/2026-09-13-exclude-vendored-clone-caches-from-md-links.md)。
+- `verify-adr-format.py`：16 个用例覆盖路径段数（fail-closed）、lifecycle/class 封闭集、slug 正则、日历日与未来日期、状态-目录一致性、骨架缺失、implemented 禁用 spec 标题、archived 与顶层豁免跳过；判据本身单家于 [enforce-adr-naming-in-host-gate](../process/2026-09-13-enforce-adr-naming-in-host-gate.md)。
+- 入口都是 `--self-test`，须是唯一参数（多余参数落回 argparse 报错）；分流在参数解析之前或作为独立分支，因此无参数调用与既有调用点（CI、`.githooks/*`）行为不变。
+- 逐用例语义由脚本内的 `desc` 字符串承载，本笔记不复述。
 
 ## Alternatives considered
 
@@ -26,6 +28,6 @@ Status: implemented
 
 ## Consequences
 
-- 收益：排除集合与锚点判据有可复跑的红/绿证据；改判据时先跑 `--self-test` 即暴露回退，不必依赖临建树手工验证。
-- 代价：脚本体量净增约 80 行；夹具与实现同文件，改实现需同步改期望（夹具失败即提醒）。
-- 已知缺口：`verify-adr-format.py` 尚无夹具自测，也不校验文件名/日期格式（该条现由评审强制，`.agents/notes/README.md` 已如实标注）；补齐属独立单元，不与链接门禁夹具混做。
+- 收益：命名/路径/日期判据、排除集合与锚点判据都有可复跑的红/绿证据；改判据时先跑 `--self-test` 即暴露回退，不必依赖临时搭树手工验证。
+- 代价：两个脚本体量净增约 80 行（md-links）与约 120 行（adr-format）；夹具与实现同文件，改实现需同步改期望（夹具失败即提醒）。
+- 已知缺口：`verify-doc-budgets.py` 尚无夹具自测；归档冻结检查与双语配对规则未移植（见 [enforce-adr-naming-in-host-gate](../process/2026-09-13-enforce-adr-naming-in-host-gate.md) 的已知缺口）。

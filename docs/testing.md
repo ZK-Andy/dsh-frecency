@@ -27,4 +27,4 @@ python3 scripts/verify-doc-budgets.py --manifest scripts/doc-budgets.manifest.js
 python3 scripts/verify-md-links.py
 ```
 
-行为级变更必须配套回归/快照（feature-flow 步骤 3）；git hooks（`scripts/setup-hooks.sh`）在 pre-commit/pre-push 做增量快检，CI 拥有穷尽矩阵。`verify-handoff-structure.py` 守的是本机 HANDOFF 家庭（该家庭不入提交）：CI 检出里没有这些文件、脚本空过，故 CI 的 Doc gates 步骤只跑其余三道。门禁脚本自身判据的回归由 `--self-test` 夹具承担（`verify-handoff-structure.py` / `verify-md-links.py`）。
+行为级变更必须配套回归/快照（feature-flow 步骤 3）；git hooks（`scripts/setup-hooks.sh`）在 pre-commit/pre-push 做增量快检，CI 拥有穷尽矩阵。`verify-handoff-structure.py` 守的是本机 HANDOFF 家庭（该家庭不入提交）：CI 检出里没有这些文件、脚本空过，故 CI 的 Doc gates 步骤只跑其余三道。门禁脚本自身判据的回归由 `--self-test` 夹具承担（`verify-adr-format.py` / `verify-handoff-structure.py` / `verify-md-links.py`）。
