@@ -48,6 +48,12 @@ render_bucket() {
   done <<< "$LOGS"
 }
 
+# 标题标签：tagged 提交取 tag 名，否则回落到 ref 文本。纯函数，便于自测钉规则。
+resolve_label() {
+  local ref="$1" exact_tag="$2"
+  if [[ -n "$exact_tag" ]]; then printf '%s' "$exact_tag"; else printf '%s' "$ref"; fi
+}
+
 self_test() {
   echo "== release-notes self-test =="
   local failures=0
@@ -100,6 +106,19 @@ self_test() {
     failures=$((failures+1))
   fi
 
+  # ③ 标题标签：tagged 提交取 tag 名，否则回落 ref 文本。
+  local label
+  label="$(resolve_label HEAD v0.1.2)"
+  if [[ "$label" != "v0.1.2" ]]; then
+    echo "FAIL: resolve_label(HEAD, v0.1.2) = '$label'" >&2
+    failures=$((failures+1))
+  fi
+  label="$(resolve_label 97a6f7e "")"
+  if [[ "$label" != "97a6f7e" ]]; then
+    echo "FAIL: resolve_label(97a6f7e, '') = '$label'" >&2
+    failures=$((failures+1))
+  fi
+
   if [[ "$failures" -eq 0 ]]; then
     echo "== release-notes self-test passed =="
   else
@@ -130,8 +149,9 @@ fi
 
 LOGS="$(git -C "$ROOT" log --no-merges --format='%h|%s' "$FROM_REF..$TO_REF" 2>/dev/null || true)"
 
-# 首行：标题
-echo "# Release $TO_REF"
+# 首行：标题（tag 上带版本号；CI 传 $GITHUB_REF_NAME 时同样落到 tag 名）
+LABEL="$(resolve_label "$TO_REF" "$(git -C "$ROOT" describe --tags --exact-match "$TO_REF" 2>/dev/null || true)")"
+echo "# Release $LABEL"
 echo
 echo "DeepSeek Harness 插件：常驻索引 + frecency 文件搜索，同名覆盖内置 grep/glob。安装 \`dsh plugin --profile <profile> add dsh-frecency\`，npm 包 [dsh-frecency](https://www.npmjs.com/package/dsh-frecency)。"
 echo
