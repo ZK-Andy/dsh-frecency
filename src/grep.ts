@@ -2,10 +2,11 @@ import { defineTool, type ToolDefinition } from "@deepseek-ai/dsh-tools";
 import { parseGrepArgs, presentGrepCall, presentGrepResult } from "@deepseek-ai/dsh-tool-fs-search";
 import type { GrepCursor, GrepMatch, GrepOptions, GrepResult } from "@ff-labs/fff-node";
 import { FrecencyError, unwrap } from "./finder.ts";
-import { elapsedMs, pluginLog } from "./log.ts";
+import { pluginLog } from "./log.ts";
 import { filterByGlob, filterByPrefix, toMatch, type GrepToolMatch } from "./mapping.ts";
 import { formatRetainedGrep, grepSearchMeta, retainGrepMatches, type RetentionCaps } from "./presentation.ts";
 import { resolveScope } from "./scope.ts";
+import { startTimer } from "./timing.ts";
 
 /**
  * Engine pages are fetched to exhaustion (bounded): a single page would leave
@@ -78,7 +79,7 @@ export function defineGrepTool(caps: RetentionCaps & { timeoutMs: number }): Too
       presentationMeta: (_args, value) => grepSearchMeta(combinedRetention(value, caps), caps),
     },
     async execute(args, exec) {
-      const startedAt = performance.now();
+      const done = startTimer();
       const input = parseGrepArgs(args);
       const workdir = exec.agent?.session?.header?.cwd ?? process.cwd();
       const scope = await resolveScope(input.path, workdir);
@@ -109,7 +110,7 @@ export function defineGrepTool(caps: RetentionCaps & { timeoutMs: number }): Too
       pluginLog(
         `grep "${input.pattern}" served by the resident index — ${matches.length} matches in ` +
           `${new Set(matches.map((match) => match.path)).size} files ` +
-          `(workdir ${workdir}; ${elapsedMs(startedAt)}ms)`,
+          `(workdir ${workdir}; ${done()}ms)`,
       );
       return { matches, truncated: !exhausted };
     },

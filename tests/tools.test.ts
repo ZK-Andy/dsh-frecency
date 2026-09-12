@@ -330,21 +330,31 @@ describe("serve log timing", () => {
     } finally {
       setLogger(undefined);
     }
-    expect(lines).toHaveLength(2);
-    expect(lines[0]).toMatch(/^dsh-frecency: resident index ready for \/ws in \d+ms$/);
-    expect(lines[1]).toMatch(/^dsh-frecency: grep "x" served by the resident index .*\(workdir \/ws; \d+ms\)$/);
+    expect(lines.some((line) => /^dsh-frecency: resident index ready for \/ws \(build; \d+ms\)$/.test(line))).toBe(true);
+    expect(
+      lines.some((line) =>
+        /^dsh-frecency: grep "x" served by the resident index .*\(workdir \/ws; \d+ms\)$/.test(line),
+      ),
+    ).toBe(true);
   });
 
-  it("stamps the glob serve line with the whole-call duration", async () => {
+  it("stamps both glob serve lines: rg parity and the index fallback", async () => {
     const tool = defineGlobTool(caps);
-    rgDefaults.result = { paths: ["a.md"], complete: true };
     const lines: string[] = [];
     setLogger({ info: (message) => lines.push(String(message)) });
     try {
+      rgDefaults.result = { paths: ["a.md"], complete: true };
       await tool.execute!({ pattern: "*.md" }, execFor("/ws"));
+      rgDefaults.result = null;
+      rgDefaults.error = "spawn rg ENOENT";
+      defaults.globResult = { ok: true, value: { items: [{ relativePath: "docs/design.md" }], totalMatched: 1 } };
+      await tool.execute!({ pattern: "*.ts" }, execFor("/ws"));
     } finally {
       setLogger(undefined);
     }
-    expect(lines.some((line) => /served by rg parity .*\(workdir \/ws; \d+ms\)$/.test(line))).toBe(true);
+    const serveLines = lines.filter((line) => line.includes("served by"));
+    expect(serveLines).toHaveLength(2);
+    expect(serveLines[0]).toMatch(/glob "\*\.md" served by rg parity .*\(workdir \/ws; \d+ms\)$/);
+    expect(serveLines[1]).toMatch(/glob "\*\.ts" served by the resident index .*\(workdir \/ws; \d+ms\)$/);
   });
 });

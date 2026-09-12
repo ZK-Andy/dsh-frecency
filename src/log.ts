@@ -1,7 +1,6 @@
 import { appendFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { performance } from "node:perf_hooks";
 
 /**
  * Plugin evidence log. The desktop host.log only carries the Electron shell's
@@ -26,9 +25,4 @@ export function pluginLog(message: string): void {
       // No writable dsh home (e.g. CI); the in-process log line still stands.
     }
   }
-}
-
-/** Whole milliseconds since `startedAt`, for the `; Nms` tail on serve lines. */
-export function elapsedMs(startedAt: number): number {
-  return Math.round(performance.now() - startedAt);
 }

@@ -23,7 +23,7 @@
 
 ## 验证与取证
 
-- **每次调用的端到端耗时**：`~/.dsh/logs/dsh-frecency.log` 的 serve 行尾注 `(workdir …; Nms)` 是 `execute` 内起止的整段耗时（不含 harness 渲染），grep 与 glob 都带；另有每份新建索引一行 `resident index ready for <path> in Nms`，把一次性构建成本从首次调用的耗时里分出来。`tail -f` 可直接观察，或按 pattern 统计多次调用。前提是插件已装（profile 里的 npm 版本要发新版才带这些字段）。
+- **每次调用的端到端耗时**（[脚本]）：`~/.dsh/logs/dsh-frecency.log` 里正常服务路径的 serve 行尾注 `(workdir …; Nms)`，是 `execute` 内从入口到该行写出的耗时（含引擎分页、映射与 prefix/include 过滤；不含 harness 的 render/presentationMeta/schema 校验）；每份真正进驻 slot 的索引另有 `resident index ready for <path> (build; Nms)`，把一次性构建成本与每次调用分开。失败与取消路径、以及 glob 的 `rg unavailable …` 降级通知行都没有耗时尾注。前提是插件已装（profile 里的 npm 版本要发新版才带这些字段）。
 - **遮蔽是否生效的判别**：会话内 grep 一个已知词，比对该词的 rg 计数（尊重 gitignore）与引擎返回项数——两者语义不同（rg 按行、引擎按匹配出现），计数一致即内置在服务；另外 `grep fff /proc/<pid>/maps` 会撞地址 hex 伪匹配（如 `[vsyscall]`），须按路径字段 awk 过滤，`libfff_c.so` 仅在 `FileFinder.create()` 时映射、import 不映射，可据此判定 apply 是否执行。
 - **真宿主**：`node dsh --profile <p>` 进程才是 harness（`~/.dsh/logs/run-marker.json` 的 pid 是桌面壳）；落盘日志 `~/.dsh/logs/host.log`。插件级 logger.info 不进 host.log（级别门控 + 该文件只承载桌面壳通道）——本插件的装载/检索证据写 `~/.dsh/logs/dsh-frecency.log`。
 - **预设组合的作用域事实**：同一 `agent.cordis.yml` 的所有行共享一个 scope，同名工具两行并存即 `tool "grep" is already registered in this scope`——跨行遮蔽不存在，同名替换必须整行进行；跨平面遮蔽由 agent own 层实现（per-agent 注册，见 ADR `mount-via-per-agent-registration`）。

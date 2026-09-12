@@ -2,11 +2,12 @@ import { defineTool, type ToolDefinition } from "@deepseek-ai/dsh-tools";
 import { parseGlobArgs, presentGlobCall, presentGlobResult, toWorkdirRelative } from "@deepseek-ai/dsh-tool-fs-search";
 import { getEphemeralFinder, getWorkspaceFinder, unwrap } from "./finder.ts";
 import type { FileFinder } from "@ff-labs/fff-node";
-import { elapsedMs, pluginLog } from "./log.ts";
+import { pluginLog } from "./log.ts";
 import { filterByPrefix } from "./mapping.ts";
 import { buildGlobArgv, runRgFiles } from "./rg.ts";
 import { formatGlobPage, globPage, globSearchMeta, type RetentionCaps } from "./presentation.ts";
 import { resolveScopeBase, type ScopeBase } from "./scope.ts";
+import { startTimer } from "./timing.ts";
 
 /** Pages are fetched to exhaustion (bounded): see grep.ts for the truncation-honesty rationale. */
 const FETCH_PAGE_SIZE = 500;
@@ -60,7 +61,7 @@ export function defineGlobTool(caps: RetentionCaps & { timeoutMs: number }): Too
       presentationMeta: (_args, value) => globSearchMeta(globPageFor(value, caps), caps),
     },
     async execute(args, exec) {
-      const startedAt = performance.now();
+      const done = startTimer();
       const input = parseGlobArgs(args);
       const workdir = exec.agent?.session?.header?.cwd ?? process.cwd();
       const base = resolveScopeBase(input.path, workdir);
@@ -82,7 +83,7 @@ export function defineGlobTool(caps: RetentionCaps & { timeoutMs: number }): Too
         exhausted = rgResult.complete;
         pluginLog(
           `glob "${input.pattern}" served by rg parity — ${relativePaths.length} paths ` +
-            `(workdir ${workdir}; ${elapsedMs(startedAt)}ms)`,
+            `(workdir ${workdir}; ${done()}ms)`,
         );
       } catch (error) {
         // Caller cancellation / tool timeout: do NOT degrade and run an extra
@@ -101,7 +102,7 @@ export function defineGlobTool(caps: RetentionCaps & { timeoutMs: number }): Too
         exhausted = served.exhausted;
         pluginLog(
           `glob "${input.pattern}" served by the resident index — ${relativePaths.length} paths ` +
-            `(workdir ${workdir}; ${elapsedMs(startedAt)}ms)`,
+            `(workdir ${workdir}; ${done()}ms)`,
         );
       }
       let paths = relativePaths.map((p) => base.toDisplay(p));
