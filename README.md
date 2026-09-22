@@ -8,7 +8,7 @@ English | [中文](./README.zh.md)
   <a href="https://github.com/ZK-Andy/dsh-frecency/stargazers"><img src="https://img.shields.io/github/stars/ZK-Andy/dsh-frecency?style=flat&label=stars&color=4D6BFE" alt="stars"></a>
   <a href="./LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a>
   <a href="https://github.com/ZK-Andy/dsh-frecency/actions/workflows/ci.yml"><img src="https://github.com/ZK-Andy/dsh-frecency/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <a href="./docs/testing.md"><img src="https://img.shields.io/badge/tests-69%2F69-brightgreen" alt="tests"></a>
+  <a href="./docs/testing.md"><img src="https://img.shields.io/badge/tests-74%2F74-brightgreen" alt="tests"></a>
   <a href="https://nodejs.org"><img src="https://img.shields.io/badge/node-%3E%3D22-339933" alt="node >= 22"></a>
 </p>
 
@@ -23,6 +23,8 @@ dsh plugin --profile <profile> add dsh-frecency
 ```
 
 Restart dsh and start a session — `grep` / `glob` keep their names and schemas; `grep` hits the resident index and `glob` serves the same results as the built-in tool, whatever agent preset you use. The built-in search tools are mounted per-session on the agent plane, which beats any host-plane registration, so the plugin registers into **each agent's own layer** at agent creation (first-party precedent: `dsh-tool-subagent`). Config `enabled: false` or removing the plugin falls back to the built-in ripgrep tools.
+
+Host packages come from the running installation: `@deepseek-ai/dsh-tools`, `@deepseek-ai/dsh-tool-fs-search`, `@deepseek-ai/dsh-output-retention` and `@deepseek-ai/schemastery` are resolved through the profile's module resolution, never installed alongside the plugin — compatibility is declared once as `engines.dsh`.
 
 ## What you get
 

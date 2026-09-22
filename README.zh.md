@@ -8,7 +8,7 @@
   <a href="https://github.com/ZK-Andy/dsh-frecency/stargazers"><img src="https://img.shields.io/github/stars/ZK-Andy/dsh-frecency?style=flat&label=stars&color=4D6BFE" alt="stars"></a>
   <a href="./LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a>
   <a href="https://github.com/ZK-Andy/dsh-frecency/actions/workflows/ci.yml"><img src="https://github.com/ZK-Andy/dsh-frecency/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <a href="./docs/testing.md"><img src="https://img.shields.io/badge/tests-69%2F69-brightgreen" alt="tests"></a>
+  <a href="./docs/testing.md"><img src="https://img.shields.io/badge/tests-74%2F74-brightgreen" alt="tests"></a>
   <a href="https://nodejs.org"><img src="https://img.shields.io/badge/node-%3E%3D22-339933" alt="node >= 22"></a>
 </p>
 
@@ -23,6 +23,8 @@ dsh plugin --profile <profile> add dsh-frecency
 ```
 
 重启 dsh 并开一个会话即可——`grep` / `glob` 工具名与参数不变，`grep` 命中常驻索引、`glob` 与内置工具同结果，且**无论你用哪个 agent 预设都生效**。内置搜索工具由 agent 预设挂载在会话近端（agent 平面），host 平面注册赢不了它，所以插件在**每个 agent 创建时把工具注册进 agent 自己的层**（第一方先例：`dsh-tool-subagent`）。配置 `enabled: false` 或卸载插件即回退内置 ripgrep 工具。
+
+运行期宿主包由 dsh 安装供给：`@deepseek-ai/dsh-tools`、`@deepseek-ai/dsh-tool-fs-search`、`@deepseek-ai/dsh-output-retention`、`@deepseek-ai/schemastery` 经 profile 模块解析从运行中的 dsh 安装取得，不会随插件再装一份；兼容线只在 `engines.dsh` 声明一次。
 
 ## 你得到什么
 

@@ -24,7 +24,13 @@ src/
 
 ## 呈现复用
 
-内置 `@deepseek-ai/dsh-tool-fs-search` 导出 `presentGrepCall` / `presentGrepResult` / `formatGrepMatches` 等呈现构造器（card `search` render intent + `presentationMeta` 管线）。本插件直接 import 复用，保证遮蔽后 UI 卡片与内置呈现一致；该包声明为可选 peerDependency，缺失时退化为模型侧纯文本 render。
+内置 `@deepseek-ai/dsh-tool-fs-search` 导出 `presentGrepCall` / `presentGrepResult` / `formatGrepMatches` 等呈现构造器（card `search` render intent + `presentationMeta` 管线）。本插件直接 import 复用，保证遮蔽后 UI 卡片与内置呈现一致；该包与其余 `@deepseek-ai/*` 同为宿主供包（见下节），缺失即装载失败。
+
+## 宿主供包
+
+运行期依赖分两类，`package.json` 里泾渭分明：`@ff-labs/fff-node` 与 `picomatch` 是自带依赖（`dependencies`，随包安装）；`@deepseek-ai/dsh-tools`、`@deepseek-ai/dsh-tool-fs-search`、`@deepseek-ai/dsh-output-retention`、`@deepseek-ai/schemastery` 由运行中的 dsh 安装供给。dsh 0.1.6 起的 profile 模块解析在 Node 的 ESM/CJS 解析器上装运行期拦截，把 profile 作用域内的裸包请求路由到安装层（`~/.dsh/profiles/node_modules`），插件既不安装也不锁定宿主包的版本。
+
+因此清单没有 `peerDependencies`：兼容线只在 `engines.dsh` 声明一次，本地构建与测试的版本钉在 `devDependencies`。判据（无 peer、宿主包不进 `dependencies`、宿主集合与源码 import 一致、构建钉在场）由 `tests/manifest.test.ts` 机器守；理由与备选见 ADR `host-supplied-packages-via-engines`。
 
 ## 生命周期
 

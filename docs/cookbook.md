@@ -20,6 +20,8 @@
 - 内置 glob 的执行契约（`@deepseek-ai/dsh-tool-fs-search/lib/index.js` 的 `buildGlobCommand` + spawn seam）：`rg --no-config --files --glob=<pattern> --sort=modified --no-ignore --hidden` + 6 个 VCS 目录（.git/.svn/.hg/.bzr/.jj/.sl）各两条排除 glob，`-- <path>` 指根；二进制 = `@vscode/ripgrep` 打包二进制（非 PATH）；exit 1 = 零结果（非失败）；`--no-config` 防宿主 `RIPGREP_CONFIG_PATH` 预处理器注入。`--sort=modified` 为旧→新升序。
 - 本地开发用 `--patch` 绝对路径覆盖层 + 本地 `node_modules` 软链（裸导入解析）；正式 `dsh plugin add` 不受影响。
 - e2e 一律用默认 headless profile，勿新造 profile——`dsh-code-runtime-worker` 不在 npm，新 profile 拉不到依赖。
+- **宿主供包告警的根因判别**（[上游]）：`dsh plugin add` 报 `unmet peer dependencies` 时，先看该包是否只在 `~/.dsh/profiles/node_modules`——是则与版本无关（父级安装层不在 profile 的 pnpm 图里）。最小复现：上一级 `node_modules` 放宿主包 + profile 的 pnpm-workspace 设 `autoInstallPeers: false` + 依赖 `file:` 指向声明 peer 的插件。
+- **插件管理器元数据不执行插件代码即可读**（[上游]）：标题/描述/图标经运行期解析器读 `<spec>/package.json` 与 `<spec>/locale/<lang>.json`（`readPluginMeta`），缺则回落包名/描述/specifier。本包无 `exports`，两个子路径可解析；**日后加 `exports`** 必须保留 `./package.json`（i18n 再加 `./locale/*`），否则静默丢标题/描述/图标。
 
 ## 验证与取证
 
