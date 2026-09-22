@@ -24,7 +24,7 @@ dsh plugin --profile <profile> add dsh-frecency
 
 Restart dsh and start a session — `grep` / `glob` keep their names and schemas; `grep` hits the resident index and `glob` serves the same results as the built-in tool, whatever agent preset you use. The built-in search tools are mounted per-session on the agent plane, which beats any host-plane registration, so the plugin registers into **each agent's own layer** at agent creation (first-party precedent: `dsh-tool-subagent`). Config `enabled: false` or removing the plugin falls back to the built-in ripgrep tools.
 
-Host packages come from the running installation: `@deepseek-ai/dsh-tools`, `@deepseek-ai/dsh-tool-fs-search`, `@deepseek-ai/dsh-output-retention` and `@deepseek-ai/schemastery` are resolved through the profile's module resolution, never installed alongside the plugin — compatibility is declared once as `engines.dsh`.
+Host packages come from the running installation: `@deepseek-ai/dsh-tools`, `@deepseek-ai/dsh-tool-fs-search`, `@deepseek-ai/dsh-output-retention` and `@deepseek-ai/schemastery` are resolved through the profile's module resolution, never installed alongside the plugin. Built and tested against DSH `0.1.2-alpha.3` through `0.1.7-alpha.1`.
 
 ## What you get
 

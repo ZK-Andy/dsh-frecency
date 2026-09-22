@@ -13,8 +13,7 @@
   "homepage": "https://github.com/ZK-Andy/dsh-frecency#readme",
   "bugs": "https://github.com/ZK-Andy/dsh-frecency/issues",
   "engines": {
-    "node": ">=22",
-    "dsh": "^0.1.2-alpha.3"
+    "node": ">=22"
   },
   "keywords": [
     "deepseek",

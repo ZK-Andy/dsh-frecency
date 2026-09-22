@@ -24,7 +24,7 @@ dsh plugin --profile <profile> add dsh-frecency
 
 重启 dsh 并开一个会话即可——`grep` / `glob` 工具名与参数不变，`grep` 命中常驻索引、`glob` 与内置工具同结果，且**无论你用哪个 agent 预设都生效**。内置搜索工具由 agent 预设挂载在会话近端（agent 平面），host 平面注册赢不了它，所以插件在**每个 agent 创建时把工具注册进 agent 自己的层**（第一方先例：`dsh-tool-subagent`）。配置 `enabled: false` 或卸载插件即回退内置 ripgrep 工具。
 
-运行期宿主包由 dsh 安装供给：`@deepseek-ai/dsh-tools`、`@deepseek-ai/dsh-tool-fs-search`、`@deepseek-ai/dsh-output-retention`、`@deepseek-ai/schemastery` 经 profile 模块解析从运行中的 dsh 安装取得，不会随插件再装一份；兼容线只在 `engines.dsh` 声明一次。
+运行期宿主包由 dsh 安装供给：`@deepseek-ai/dsh-tools`、`@deepseek-ai/dsh-tool-fs-search`、`@deepseek-ai/dsh-output-retention`、`@deepseek-ai/schemastery` 经 profile 模块解析从运行中的 dsh 安装取得，不会随插件再装一份。构建与实测覆盖 DSH `0.1.2-alpha.3` 至 `0.1.7-alpha.1`。
 
 ## 你得到什么
 
