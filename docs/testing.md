@@ -6,7 +6,7 @@
 
 1. **单元（vitest）**：纯函数——fff 结果到工具输出的映射、参数 schema 映射、降级判定、Result 解包；含 grep 输出 `isDefinition`/`gitStatus` 透传与 `classifyDefinitions` 开关断言。native 引擎不进单元测试，一律 mock。
 2. **集成（真实引擎 / 真实 rg）**：对本仓库工作区实测 `FileFinder` 往返（create → waitForScan/waitForIndexReady → grep/glob → destroy），断言命中与字段完整性；skip 条件：`@ff-labs/fff-bin-*` 平台包缺失。rg 平价同层：对临时目录实测 `runRgFiles`（ignored/hidden 收录、VCS 排除、mtime 序、预算截断），断言与内置 glob 语义一致；skip 条件：rg 二进制不可用（`resolveRgPath` 回落 PATH `rg` 仍不可执行时）。
-3. **e2e（真实 harness）**：默认 headless profile + `--patch` 覆盖层指向 `./dist/index.js` 跑真实任务，验证同名 `grep`/`glob` 走常驻索引、遮蔽生效、降级路径行为。本地 `--patch` 开发的操作细节（软链、profile 选择）见 `docs/cookbook.md`。
+3. **e2e（真实 harness）**：默认 headless profile + `--patch` 覆盖层指向 `./dist/index.js` 跑真实任务，验证同名 `grep`/`glob` 走常驻索引、遮蔽生效、降级路径行为。本地 `--patch` 开发的操作细节（软链、profile 选择）见 `docs/cookbook.md`。宿主线实测：`0.1.7-alpha.1`（2026-09-22 真机会话）。
 4. **清单与产物不变式（vitest）**：`tests/manifest.test.ts` 断言发布契约——无 `peerDependencies`；源码运行期导入（静态、动态 `import()`、副作用 `import` 与子路径都归到包名）的 `@deepseek-ai/*` 集合与宿主包清单一致；宿主包不进 `dependencies`、每个都有 devDependency 构建钉；构建产物把宿主包留作外部导入（`dist/index.js` 缺失时该条 skip）。判据来源见 ADR `host-supplied-packages-via-engines`。
 
 ## 性能与内存基线

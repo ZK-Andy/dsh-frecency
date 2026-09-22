@@ -31,3 +31,7 @@ dsh 内置 grep/glob（`@deepseek-ai/dsh-tool-fs-search`）每次调用 spawn �
 - 代价：内存换性能（实测口径见 [performance](../../../../docs/performance.md)），需预留可配置开关供大仓库/低复用场景回退内置 ripgrep；遮蔽后需自带 `SearchResultView` 对齐内置卡片呈现。
 - 边界承诺：只降低重复检索成本，不消除子代理各自上下文在 Node 堆的累积；frecency 对冷文件/首次搜索提升有限。
 - 遗留复验：同名遮蔽机制需在真实 dsh 环境复验 presentation 一致性（见 HANDOFF-todos）。
+
+## Related
+
+- ADR `host-supplied-packages-via-engines`：本插件宿主包的声明方式；此处"`peerDependencies` 为空"指引擎包 `@ff-labs/fff-node` 自身清单。

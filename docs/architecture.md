@@ -28,7 +28,7 @@ src/
 
 ## 宿主供包
 
-运行期依赖分两类，`package.json` 里泾渭分明：`@ff-labs/fff-node` 与 `picomatch` 是自带依赖（`dependencies`，随包安装）；`@deepseek-ai/dsh-tools`、`@deepseek-ai/dsh-tool-fs-search`、`@deepseek-ai/dsh-output-retention`、`@deepseek-ai/schemastery` 由运行中的 dsh 安装供给。dsh 0.1.6 起的 profile 模块解析在 Node 的 ESM/CJS 解析器上装运行期拦截，把 profile 作用域内的裸包请求路由到安装层（`~/.dsh/profiles/node_modules`），插件既不安装也不锁定宿主包的版本。
+运行期依赖分两类，`package.json` 里泾渭分明：`@ff-labs/fff-node` 与 `picomatch` 是自带依赖（`dependencies`，随包安装）；其余 `@deepseek-ai/*`（名单见 README 安装节）由运行中的 dsh 安装供给。dsh 0.1.6 起的 profile 模块解析在 Node 的 ESM/CJS 解析器上装运行期拦截，把 profile 作用域内的裸包请求路由到安装层（`~/.dsh/profiles/node_modules`），插件既不安装也不锁定宿主包的版本。
 
 因此清单没有 `peerDependencies`，也没有机器可读的兼容范围（dsh 只发预发布版，简洁范围覆盖不了移动的预发布线）：兼容窗口以散文写进 README，本地构建与测试的版本钉在 `devDependencies`。宿主包不在任何依赖字段里，打包器便不再自动外部化它们——`tsdown.config.ts` 用 `deps.neverBundle` 显式排除；清单与产物的逐条判据见 `docs/testing.md`，理由与备选见 ADR `host-supplied-packages-via-engines`。
 

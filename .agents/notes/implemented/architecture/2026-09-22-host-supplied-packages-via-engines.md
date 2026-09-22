@@ -7,9 +7,9 @@ Status: implemented
 
 ## Problem
 
-插件的运行期依赖分两类：自带实现依赖（`@ff-labs/fff-node`、`picomatch`，随包安装）与宿主供包（`@deepseek-ai/dsh-tools`、`@deepseek-ai/dsh-tool-fs-search`、`@deepseek-ai/dsh-output-retention`、`@deepseek-ai/schemastery`，由运行中的 dsh 安装提供）。这四条包此前按 `peerDependencies` 声明，范围钉在构建基线 `^0.1.2-alpha.3`。
+插件的运行期依赖分两类：自带实现依赖（`@ff-labs/fff-node`、`picomatch`，随包安装）与宿主供包（`@deepseek-ai/dsh-tools`、`@deepseek-ai/dsh-tool-fs-search`、`@deepseek-ai/dsh-output-retention`、`@deepseek-ai/schemastery`，由运行中的 dsh 安装提供）。
 
-该形态与 dsh 0.1.6 起的 profile 模块解析（0.1.7 的 `RuntimeResolution` / `RuntimeInterception`）不兼容：宿主包由安装层 `~/.dsh/profiles/node_modules` 供给，profile 的 pnpm 图里没有它们。按真实 profile 布局实测（宿主包只存在于上一级共享层、`autoInstallPeers: false`、pnpm 11.25.0），`dsh plugin add` 必然报 `unmet peer dependencies`——把宿主包版本换成满足范围的旧版照样报，告警来自"不在 pnpm 图里"这个结构事实，与版本无关。
+把宿主供包写成 `peerDependencies`（范围钉在构建基线 `^0.1.2-alpha.3`）与 dsh 0.1.6 起的 profile 模块解析（0.1.7 的 `RuntimeResolution` / `RuntimeInterception`）不兼容：宿主包由安装层 `~/.dsh/profiles/node_modules` 供给，profile 的 pnpm 图里没有它们。按真实 profile 布局实测（宿主包只存在于上一级共享层、`autoInstallPeers: false`、pnpm 11.25.0），`dsh plugin add` 必然报 `unmet peer dependencies`——把宿主包版本换成满足范围的旧版照样报，告警来自"不在 pnpm 图里"这个结构事实，与版本无关。
 
 范围本身在任何严格 semver 消费者下也不成立：`semver.satisfies('0.1.7-alpha.1', '^0.1.2-alpha.3')` 默认选项为 false（预发布版本被 `[major,minor,patch]` 元组锁定）。上游桌面应用校验插件图时正是这么判的（`apps/desktop/src/profile-packages.ts` 对共享宿主包直接 `satisfies(host.version, range)`，不匹配即抛错拒绝插件）。于是四条声明既不产生有效版本约束，又持续制造安装告警，并可能在严格校验的宿主上变成硬失败。
 
@@ -17,9 +17,9 @@ Status: implemented
 
 宿主供包不出现在 `package.json` 的 `peerDependencies`，也不用任何机器可读版本字段声明：它们是运行中 dsh 安装的供给品，而 dsh 只发预发布版本——任何简洁范围都被 `[major,minor,patch]` 元组锁定（`^0.1.2-alpha.3` 与 `>=0.1.2-alpha.3 <0.2.0` 都不覆盖 0.1.7-alpha.1），能表达"任意 0.1.x 预发布"的写法不存在。
 
-- 兼容窗口以散文写进 README（契约家）：构建与实测覆盖 DSH `0.1.2-alpha.3` 至 `0.1.7-alpha.1`。
+- 兼容窗口以散文写进 README（契约家），本笔记不复述具体版本号；实测口径记在 `docs/testing.md`。
 - 四个宿主包保留在 `devDependencies`（0.1.2-alpha.3）：本地 typecheck/build/test 的构建钉，不代表运行期版本。
-- 宿主包必须留在打包产物之外：清单的任何依赖字段都不再列出它们，tsdown 的默认外部化集合（dependencies + peerDependencies）也就不含它们，因此 `tsdown.config.ts` 显式 `deps: { neverBundle: [/^@deepseek-ai\//] }`。
+- 宿主包必须留在打包产物之外：清单的任何依赖字段都不列出它们，tsdown 的默认外部化集合（dependencies + peerDependencies）因此不含它们，`tsdown.config.ts` 显式 `deps: { neverBundle: [/^@deepseek-ai\//] }`。
 - `tests/manifest.test.ts` 守清单与产物不变式，逐条判据见 `docs/testing.md`。
 - 机制写 `docs/architecture.md`，用户契约写 README。
 
@@ -36,7 +36,7 @@ Status: implemented
 ## Consequences
 
 - 收益：`dsh plugin add` 不再刷 unmet peer；严格 semver 宿主校验面对的范围错误被消除；没有会过期的机器声明——宿主换线不需要本包先发版，README 的兼容窗口只在本包实测过新线后改写。
-- 代价：失去逐包版本约束，运行期错配（宿主 API 不兼容）只在装载或调用时以 import/调用错误暴露，安装期不再有提示。devDependencies 仍以 0.1.2-alpha.3 构建，与运行线 0.1.7-alpha.1 存在漂移——已入 HANDOFF 待办，随下次动 `src` 收口。
+- 代价：失去逐包版本约束，运行期错配（宿主 API 不兼容）只在装载或调用时以 import/调用错误暴露，安装期不再有提示。devDependencies 仍以 0.1.2-alpha.3 构建，与运行线 0.1.7-alpha.1 存在漂移——Deferred：随下次动 `src` 一并升到当时运行线并重跑真机 e2e。
 - 连带约束：宿主包不在清单的任何依赖字段里，打包器不会再自动外部化它们。`tsdown.config.ts` 的 `deps.neverBundle` 与 `tests/manifest.test.ts` 的产物断言共同兜住"宿主包不进产物"，否则插件会内联第二份宿主实例。
 - 取舍：`@ff-labs/fff-node` / `picomatch` 是自带依赖，保持 `dependencies`；宿主包与自带依赖在清单里从此泾渭分明。
 
